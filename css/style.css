@@ -2,13 +2,13 @@
    AutoPart — tokens, reset, typography, layout, utilities
    ========================================================== */
 
-/* Vazirmatn is used only when installed locally.
-   To bundle it, place the file at assets/fonts/Vazirmatn.woff2 and uncomment the url() line. */
+/* Iranian Sans ships a single Regular weight with Persian glyphs only;
+   Latin text falls back to the next font in --font. */
 @font-face {
-  font-family: "Vazirmatn";
-  src: local("Vazirmatn"), local("Vazirmatn Regular")
-    /* , url("../assets/fonts/Vazirmatn.woff2") format("woff2") */;
-  font-weight: 100 900;
+  font-family: "Iranian Sans";
+  src: url("../assets/fonts/IranianSans.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
   font-display: swap;
 }
 
@@ -28,7 +28,7 @@
   --border: #EAEAEA;
   --blue: #1557b0;
 
-  --font: "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+  --font: "Iranian Sans", Vazirmatn, Tahoma, "Segoe UI", sans-serif;
   --radius: 12px;
   --radius-lg: 16px;
   --radius-sm: 8px;
