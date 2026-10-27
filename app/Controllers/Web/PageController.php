@@ -131,7 +131,7 @@ final class PageController
             'type' => 'product', 'jsonld' => $jsonld], 'product', $p['id']);
         $banner = ContentService::banners('product', 1)[0] ?? null;
         return $this->render('product', 'product', ['p' => $p, 'banner' => $banner, 'boot' => ['product' => ['id' => $p['id'], 'stock' => $p['stock'], 'variants' => $p['variants'], 'title' => $p['title']]]],
-            $seo, ['pages/product.js']);
+            $seo, ['vehicle-selector.js', 'pages/product.js']);
     }
 
     /* ---------------- Shopping & account (private) ---------------- */

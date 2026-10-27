@@ -30,6 +30,7 @@ return static function (Router $r): void {
         $r->get('/categories', [Api\CatalogController::class, 'categories']);
         $r->get('/brands', [Api\CatalogController::class, 'brands']);
         $r->get('/vehicles', [Api\CatalogController::class, 'vehicles']);
+        $r->get('/products/{id:\d+}/fitment', [Api\CatalogController::class, 'fitment'], ['throttle:fitment,120,60']);
         $r->get('/products/{id:\d+}/reviews', [Api\CatalogController::class, 'reviews']);
         $r->post('/products/{id:\d+}/reviews', [Api\CatalogController::class, 'storeReview'], ['auth', 'throttle:review,10,600']);
         $r->get('/products/{id:\d+}/questions', [Api\CatalogController::class, 'questions']);

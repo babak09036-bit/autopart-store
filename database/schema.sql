@@ -398,6 +398,9 @@ CREATE TABLE vehicle_models (
 CREATE TABLE product_vehicle_compat (
   product_id BIGINT UNSIGNED NOT NULL,
   vehicle_model_id BIGINT UNSIGNED NOT NULL,
+  year_from SMALLINT UNSIGNED NULL COMMENT 'first fitting production year (solar); NULL = the model''s first year',
+  year_to SMALLINT UNSIGNED NULL COMMENT 'last fitting production year (solar); NULL = the model''s last year',
+  note VARCHAR(160) NULL COMMENT 'fitment detail, e.g. engine or trim',
   PRIMARY KEY (product_id, vehicle_model_id),
   KEY idx_pvc_model (vehicle_model_id),
   CONSTRAINT fk_pvc_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,

@@ -94,7 +94,8 @@
     root.addEventListener('input', A.debounce(draw, 200));
     draw();
   }
-  function readSeo(root) { return A.read($('[data-seo-form]', root), SEO_FIELDS); }
+  /** root is the <form> containing the SEO block (A.read needs form.elements). */
+  function readSeo(root) { return A.read(root, SEO_FIELDS); }
   function seoHasValue(d) { return Object.keys(d).some(function (k) { return k === 'is_indexable' ? !d[k] : !!d[k]; }); }
 
   /* ================================================================
@@ -260,15 +261,30 @@
       '<label class="a-check"><input type="checkbox" data-vactive' + (v.is_active === undefined || Number(v.is_active) ? ' checked' : '') + '><span>فعال</span></label></div>' + TOOLS + '</div>';
   }
 
+  /** One fitment row: vehicle model (grouped by car brand) + optional year range + note. */
+  function fitmentRow(models, v) {
+    var groups = {};
+    models.forEach(function (m) { (groups[m.brand_name] = groups[m.brand_name] || []).push(m); });
+    return '<div class="a-row" data-fit-row><span class="a-drag" aria-hidden="true">⋮</span><div class="a-row__body">' +
+      '<select class="a-input" data-fmodel aria-label="خودرو"><option value="">— انتخاب خودرو —</option>' + Object.keys(groups).map(function (b) {
+        return '<optgroup label="' + esc(b) + '">' + groups[b].map(function (m) {
+          return '<option value="' + m.id + '"' + (String(m.id) === String(v.vehicle_model_id) ? ' selected' : '') + '>' + esc(b + ' ' + m.name) + ' (' + A.fa(m.year_from + '–' + m.year_to) + ')</option>';
+        }).join('') + '</optgroup>';
+      }).join('') + '</select>' +
+      '<input class="a-input" data-ffrom type="number" value="' + esc(v.year_from || '') + '" placeholder="از سال (اختیاری)" aria-label="از سال">' +
+      '<input class="a-input" data-fto type="number" value="' + esc(v.year_to || '') + '" placeholder="تا سال (اختیاری)" aria-label="تا سال">' +
+      '<input class="a-input" data-fnote value="' + esc(v.note || '') + '" placeholder="توضیح (مثلاً فقط موتور TU5)" aria-label="توضیح سازگاری"></div>' + TOOLS + '</div>';
+  }
+
   page('#/products/:id', 'products.view|products.manage', function (params) {
     var id = params.id === 'new' ? null : params.id;
     var title = id ? 'ویرایش محصول' : 'افزودن محصول';
     A.loading(title);
     Promise.all([
-      id ? A.get('products/' + id) : Promise.resolve({ status: 'draft', images: [], attributes: [], variants: [], category_ids: [], vehicle_model_ids: [], related_ids: [], complementary_ids: [], stock: 0, low_stock_threshold: 5 }),
-      all('r/brands'), all('r/categories'), id && A.can('seo.manage') ? A.get('seo/product/' + id) : Promise.resolve(null)
+      id ? A.get('products/' + id) : Promise.resolve({ status: 'draft', images: [], attributes: [], variants: [], category_ids: [], vehicles: [], related_ids: [], complementary_ids: [], stock: 0, low_stock_threshold: 5 }),
+      all('r/brands'), all('r/categories'), id && A.can('seo.manage') ? A.get('seo/product/' + id) : Promise.resolve(null), all('r/vehicle-models')
     ]).then(function (r) {
-      var p = r[0], brands = r[1], cats = r[2], seo = r[3];
+      var p = r[0], brands = r[1], cats = r[2], seo = r[3], models = r[4];
       p.sale_starts_at = p.sale_starts_at_local || ''; p.sale_ends_at = p.sale_ends_at_local || '';
       var main = [
         { name: 'name', label: 'نام محصول', required: true, full: true, maxlength: 190 },
@@ -293,8 +309,7 @@
       ];
       var extra = [
         { name: 'attributes', label: 'مشخصات فنی', type: 'keyvalue', full: true },
-        { name: 'is_universal_fit', label: 'مناسب همه خودروها (عمومی)', type: 'checkbox', full: true },
-        { name: 'vehicle_model_ids', label: 'خودروهای سازگار', type: 'multi', endpoint: 'api/admin/r/vehicle-models', full: true },
+        { name: 'is_universal_fit', label: 'مناسب همه خودروها (عمومی)', type: 'checkbox', full: true, help: 'فقط برای کالاهایی که واقعاً به مدل خودرو وابسته نیستند (مثل جاروبرقی یا خوشبوکننده).' },
         { name: 'related_ids', label: 'محصولات مرتبط', type: 'multi', endpoint: 'api/admin/products', full: true },
         { name: 'complementary_ids', label: 'محصولات مکمل', type: 'multi', endpoint: 'api/admin/products', full: true }
       ];
@@ -308,7 +323,11 @@
         '<div class="a-panel" data-panel="pricing" hidden><div class="a-grid">' + fields(pricing, p) + '</div>' + moves + '</div>' +
         '<div class="a-panel" data-panel="images" hidden><p class="a-hint">تصویر اول، تصویر اصلی محصول است. ترتیب را با دکمه‌ها تغییر دهید. برای هر تصویر متن جایگزین بنویسید.</p><p class="a-error" data-error-for="images"></p>' +
           '<div class="a-rows" data-images>' + p.images.map(imageRow).join('') + '</div>' + btn(A.icon('plus', 'icon--sm') + 'افزودن تصویر', 'data-add-image') + '</div>' +
-        '<div class="a-panel" data-panel="extra" hidden><div class="a-grid">' + fields(extra, p) + '</div><h3 class="a-card__title" style="margin-top:20px">تنوع‌ها (رنگ، حجم، سایز…)</h3><p class="a-error" data-error-for="variants"></p>' +
+        '<div class="a-panel" data-panel="extra" hidden><div class="a-grid">' + fields(extra, p) + '</div>' +
+          '<h3 class="a-card__title" style="margin-top:20px">خودروهای سازگار</h3><p class="a-hint">برای هر خودرو، اگر کالا فقط برای بخشی از سال‌های تولید مناسب است، بازه سال را بنویسید (خالی = همه سال‌های آن مدل). ' +
+          (models.length ? '' : '<a href="admin#/vehicles">ابتدا برند و مدل خودرو تعریف کنید.</a>') + '</p><p class="a-error" data-error-for="vehicles"></p>' +
+          '<div class="a-rows" data-fitments>' + (p.vehicles || []).map(function (v) { return fitmentRow(models, v); }).join('') + '</div>' + btn(A.icon('plus', 'icon--sm') + 'افزودن خودرو', 'data-add-fitment') +
+          '<h3 class="a-card__title" style="margin-top:20px">تنوع‌ها (رنگ، حجم، سایز…)</h3><p class="a-error" data-error-for="variants"></p>' +
           '<div class="a-rows" data-variants>' + p.variants.map(variantRow).join('') + '</div>' + btn(A.icon('plus', 'icon--sm') + 'افزودن تنوع', 'data-add-variant') + '</div>' +
         (A.can('seo.manage') ? '<div class="a-panel" data-panel="seo" hidden>' + (id ? seoForm(seo && seo.record) : '<div class="a-alert">تنظیمات سئو پس از اولین ذخیره محصول فعال می‌شود.</div>') + '</div>' : '') +
         '<div class="a-sticky-actions">' + (A.can('products.manage') ? '<button type="submit" class="a-btn a-btn--primary">ذخیره محصول</button>' : '') +
@@ -323,6 +342,7 @@
       });
       form.addEventListener('input', function (e) { if (e.target.matches('[data-path]')) e.target.closest('.a-row').querySelector('img').src = e.target.value || 'assets/images/ui/placeholder.svg'; });
       $('[data-add-variant]', form).addEventListener('click', function () { $('[data-variants]', form).insertAdjacentHTML('beforeend', variantRow({})); });
+      $('[data-add-fitment]', form).addEventListener('click', function () { $('[data-fitments]', form).insertAdjacentHTML('beforeend', fitmentRow(models, {})); });
       if (id && seo) bindSerp(form, function () { return { title: $('[name="name"]', form).value, description: $('[name="short_description"]', form).value || seo.defaults.description, url: seo.defaults.url }; });
 
       form.addEventListener('submit', function (e) {
@@ -334,6 +354,9 @@
           return { id: $('[data-vid]', row).value, name: $('[data-vname]', row).value.trim(), sku: $('[data-vsku]', row).value.trim(), price: A.en($('[data-vprice]', row).value),
             stock: Number(A.en($('[data-vstock]', row).value) || 0), is_active: $('[data-vactive]', row).checked };
         }).filter(function (x) { return x.name || x.sku; });
+        data.vehicles = $$('[data-fit-row]', form).map(function (row) {
+          return { vehicle_model_id: $('[data-fmodel]', row).value, year_from: A.en($('[data-ffrom]', row).value), year_to: A.en($('[data-fto]', row).value), note: $('[data-fnote]', row).value.trim() };
+        });
         var submit = $('[type="submit"]', form);
         submit.disabled = true;
         (id ? A.put('products/' + id, data) : A.post('products', data)).then(function (res) {

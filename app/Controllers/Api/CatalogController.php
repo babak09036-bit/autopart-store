@@ -29,6 +29,7 @@ final class CatalogController extends Controller
             'min' => is_numeric($request->query('min')) ? (float) $request->query('min') : null,
             'max' => is_numeric($request->query('max')) ? (float) $request->query('max') : null,
             'vehicle' => (string) $request->query('vehicle', ''),
+            'year' => ctype_digit(to_en_digits((string) $request->query('year', ''))) ? (int) to_en_digits((string) $request->query('year')) : null,
             'type' => mb_substr((string) $request->query('type', ''), 0, 80),
             'sort' => (string) $request->query('sort', ''),
             'page' => (int) $request->query('page', 1),
@@ -94,6 +95,22 @@ final class CatalogController extends Controller
     public function vehicles(): Response
     {
         return $this->ok(VehicleService::tree());
+    }
+
+    /** GET /api/products/{id}/fitment?vehicle={model slug}&year={solar year} — does this product fit that vehicle? */
+    public function fitment(Request $request): Response
+    {
+        $row = CatalogService::find($this->intParam($request, 'id'));
+        if (!$row) {
+            throw new HttpException(404, 'محصول یافت نشد.');
+        }
+        $data = $this->validate(['vehicle' => $request->query('vehicle'), 'year' => $request->query('year')],
+            ['vehicle' => 'required|string|maxlen:120', 'year' => 'nullable|int|min:1300|max:1500']);
+        $result = CatalogService::fitment(CatalogService::dto($row), $data['vehicle'], isset($data['year']) ? (int) $data['year'] : null);
+        if ($result['status'] === 'invalid') {
+            throw new HttpException(422, 'خودروی انتخاب‌شده یافت نشد.', ['vehicle' => 'خودرو را دوباره انتخاب کنید.']);
+        }
+        return $this->ok($result);
     }
 
     /* ---------------- Reviews ---------------- */

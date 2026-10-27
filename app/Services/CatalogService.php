@@ -63,7 +63,12 @@ final class CatalogService
             $where[] = 'b.slug IN ' . Database::in('brand', (array) $f['brand'], $params);
         }
         if (!empty($f['vehicle'])) {
-            $where[] = '(p.is_universal_fit = 1 OR EXISTS (SELECT 1 FROM product_vehicle_compat pvc JOIN vehicle_models vm ON vm.id = pvc.vehicle_model_id WHERE pvc.product_id = p.id AND vm.slug = :vehicle))';
+            $yearSql = '';
+            if (!empty($f['year'])) {
+                $yearSql = ' AND COALESCE(pvc.year_from, vm.year_from) <= :vy1 AND COALESCE(pvc.year_to, vm.year_to) >= :vy2';
+                $params['vy1'] = $params['vy2'] = (int) $f['year'];
+            }
+            $where[] = '(p.is_universal_fit = 1 OR EXISTS (SELECT 1 FROM product_vehicle_compat pvc JOIN vehicle_models vm ON vm.id = pvc.vehicle_model_id WHERE pvc.product_id = p.id AND vm.slug = :vehicle' . $yearSql . '))';
             $params['vehicle'] = (string) $f['vehicle'];
         }
         if (!empty($f['type'])) {
@@ -221,14 +226,54 @@ final class CatalogService
         }, Database::all('SELECT v.id, v.name, v.sku, v.price, COALESCE(i.quantity, 0) AS stock FROM product_variants v
             LEFT JOIN inventory i ON i.product_id = v.product_id AND i.variant_id = v.id
             WHERE v.product_id = :id AND v.is_active = 1 ORDER BY v.sort_order, v.id', ['id' => $id]));
-        $product['vehicles'] = Database::all('SELECT vm.slug, vm.name, vb.name AS brand FROM product_vehicle_compat pvc
-            JOIN vehicle_models vm ON vm.id = pvc.vehicle_model_id JOIN vehicle_brands vb ON vb.id = vm.vehicle_brand_id
-            WHERE pvc.product_id = :id ORDER BY vb.sort_order, vm.sort_order', ['id' => $id]);
+        $product['vehicles'] = self::fitments($id);
         $product['breadcrumbs'] = self::breadcrumbs($row['category_slug']);
         $product['faqs'] = Database::all('SELECT question, answer FROM faqs WHERE product_id = :id AND is_active = 1 ORDER BY sort_order', ['id' => $id]);
         $product['related'] = self::relatedProducts($id, 'related', $row['category_slug']);
         $product['complementary'] = self::relatedProducts($id, 'complementary', null);
         return $product;
+    }
+
+    /** Vehicles a product fits, with the effective production years (the product's own range, else the model's). */
+    public static function fitments(int $productId): array
+    {
+        return array_map(static fn ($v) => [
+            'slug' => $v['slug'], 'name' => $v['name'], 'brand' => $v['brand'], 'brand_slug' => $v['brand_slug'],
+            'year_from' => (int) $v['year_from'], 'year_to' => (int) $v['year_to'], 'note' => $v['note'],
+        ], Database::all('SELECT vm.slug, vm.name, vb.name AS brand, vb.slug AS brand_slug, pvc.note,
+                COALESCE(pvc.year_from, vm.year_from) AS year_from, COALESCE(pvc.year_to, vm.year_to) AS year_to
+            FROM product_vehicle_compat pvc JOIN vehicle_models vm ON vm.id = pvc.vehicle_model_id JOIN vehicle_brands vb ON vb.id = vm.vehicle_brand_id
+            WHERE pvc.product_id = :id ORDER BY vb.sort_order, vb.name, vm.sort_order, vm.name', ['id' => $productId]));
+    }
+
+    /**
+     * Whether a product fits one vehicle (model slug + optional production year).
+     * status: fits | universal | no | year (model fits, year does not) | unknown (no fitment data recorded)
+     */
+    public static function fitment(array $product, string $modelSlug, ?int $year): array
+    {
+        $vehicle = Database::one('SELECT vm.slug, vm.name, vm.year_from, vm.year_to, vb.name AS brand FROM vehicle_models vm
+            JOIN vehicle_brands vb ON vb.id = vm.vehicle_brand_id WHERE vm.slug = :s', ['s' => $modelSlug]);
+        if (!$vehicle) {
+            return ['status' => 'invalid', 'vehicle' => null, 'match' => null];
+        }
+        $label = $vehicle['name'] . ($year ? ' مدل ' . fa_digits((string) $year) : '');
+        $vehicle = ['slug' => $vehicle['slug'], 'name' => $vehicle['name'], 'brand' => $vehicle['brand'], 'label' => $label, 'year' => $year];
+        if (!empty($product['universalFit'])) {
+            return ['status' => 'universal', 'vehicle' => $vehicle, 'match' => null];
+        }
+        $all = self::fitments((int) $product['id']);
+        if (!$all) {
+            return ['status' => 'unknown', 'vehicle' => $vehicle, 'match' => null];
+        }
+        $match = array_values(array_filter($all, static fn ($v) => $v['slug'] === $modelSlug))[0] ?? null;
+        if (!$match) {
+            return ['status' => 'no', 'vehicle' => $vehicle, 'match' => null];
+        }
+        if ($year && ($year < $match['year_from'] || $year > $match['year_to'])) {
+            return ['status' => 'year', 'vehicle' => $vehicle, 'match' => $match];
+        }
+        return ['status' => 'fits', 'vehicle' => $vehicle, 'match' => $match];
     }
 
     public static function breadcrumbs(?string $categorySlug): array

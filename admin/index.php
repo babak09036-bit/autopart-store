@@ -21,7 +21,7 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
 header('Cache-Control: no-store');
 header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'");
-$v = '?v=3';
+$v = '?v=6';
 ?><!doctype html>
 <html lang="fa" dir="rtl">
 <head>

@@ -23,6 +23,7 @@
     min: params.get('min') || '',
     max: params.get('max') || '',
     vehicle: params.get('vehicle') || '',
+    year: params.get('vehicle') && /^\d{4}$/.test(params.get('year') || '') ? params.get('year') : '',
     type: params.get('type') || '',
     sort: params.get('sort') || (page === 'search' ? 'relevance' : 'popular'),
     page: Number(params.get('page')) || 1
@@ -36,7 +37,7 @@
   };
 
   function query() {
-    var q = { q: state.q, cat: state.cat, brand: state.brand, min: state.min, max: state.max, vehicle: state.vehicle, type: state.type, sort: state.sort, page: state.page > 1 ? state.page : '' };
+    var q = { q: state.q, cat: state.cat, brand: state.brand, min: state.min, max: state.max, vehicle: state.vehicle, year: state.vehicle ? state.year : '', type: state.type, sort: state.sort, page: state.page > 1 ? state.page : '' };
     FLAGS.forEach(function (f) { q[f[0]] = state[f[0]]; });
     return q;
   }
@@ -74,7 +75,7 @@
         return '<optgroup label="' + esc(b.name) + '">' + b.models.map(function (m) {
           return '<option value="' + esc(m.slug) + '"' + (state.vehicle === m.slug ? ' selected' : '') + '>' + esc(m.name) + '</option>';
         }).join('') + '</optgroup>';
-      }).join('') + '</select></fieldset>';
+      }).join('') + '</select>' + myCarButton() + '</fieldset>';
     html += '<fieldset class="filter-group"><legend>وضعیت کالا</legend>' + FLAGS.map(function (f) {
       return '<label class="switch-row"><span>' + f[1] + '</span><input type="checkbox" name="' + f[0] + '"' + (state[f[0]] ? ' checked' : '') + '></label>';
     }).join('') + '</fieldset>';
@@ -99,6 +100,7 @@
     if (min > max) { var t = min; min = max; max = t; }
     state.min = min > 0 ? min : '';
     state.max = max < Number(els.form.dataset.maxPrice) ? max : '';
+    if (state.vehicle !== f.vehicle.value) state.year = '';
     state.vehicle = f.vehicle.value;
     FLAGS.forEach(function (fl) { state[fl[0]] = f[fl[0]].checked; });
     state.page = 1;
@@ -110,9 +112,24 @@
     }).join('');
   }
 
+  /** Vehicle saved by the home/product vehicle selector (same browser only). */
+  function savedCar() { try { return JSON.parse(localStorage.getItem('ap_vehicle') || 'null'); } catch (e) { return null; } }
+  function myCarButton() {
+    var car = savedCar();
+    if (!car || !car.model || (state.vehicle === car.model && String(state.year) === String(car.year))) return '';
+    return '<button type="button" class="btn btn--light btn--sm btn--block my-car" data-my-car>فقط سازگار با ' + esc(car.modelName || car.model) + ' مدل ' + u.faDigits(car.year) + '</button>';
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('[data-my-car]')) return;
+    var car = savedCar();
+    state.vehicle = car.model; state.year = String(car.year); state.page = 1;
+    if (facets) buildFilters();
+    load(false);
+  });
+
   function vehicleName(slug) {
     var name = slug;
-    (facets ? facets.vehicles : []).forEach(function (b) { b.models.forEach(function (m) { if (m.slug === slug) name = m.name; }); });
+    (facets ? facets.vehicles : []).forEach(function (b) { b.models.forEach(function (m) { if (m.slug === slug) name = b.name + ' ' + m.name; }); });
     return name;
   }
 
@@ -130,7 +147,7 @@
       chip(f ? f.name : b, 'brand', b);
     });
     if (state.min || state.max) chip('قیمت: ' + u.num(state.min || 0) + ' تا ' + (state.max ? u.num(state.max) : 'بیشترین'), 'price');
-    if (state.vehicle) chip(vehicleName(state.vehicle), 'vehicle');
+    if (state.vehicle) chip('سازگار با ' + vehicleName(state.vehicle) + (state.year ? ' مدل ' + u.faDigits(state.year) : ''), 'vehicle');
     if (state.type) chip(state.type, 'type');
     FLAGS.forEach(function (f) { if (state[f[0]]) chip(f[1], f[0]); });
     els.active.innerHTML = chips.length ? chips.join('') + '<button type="button" class="chip" data-remove="all">حذف همه فیلترها</button>' : '';
@@ -235,12 +252,13 @@
       if (key === 'all') {
         if (!fixed.cat) state.cat = [];
         if (!fixed.brand) state.brand = [];
-        state.min = state.max = state.vehicle = state.type = '';
+        state.min = state.max = state.vehicle = state.year = state.type = '';
         FLAGS.forEach(function (f) { state[f[0]] = false; });
       } else if (key === 'cat') state.cat = state.cat.filter(function (c) { return c !== val; });
       else if (key === 'brand') state.brand = state.brand.filter(function (b) { return b !== val; });
       else if (key === 'price') state.min = state.max = '';
-      else if (key === 'vehicle' || key === 'type') state[key] = '';
+      else if (key === 'vehicle') state.vehicle = state.year = '';
+      else if (key === 'type') state.type = '';
       else state[key] = false;
       state.page = 1;
       if (facets) buildFilters();

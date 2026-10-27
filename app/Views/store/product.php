@@ -45,9 +45,21 @@ $images = $p['images'] ?: [['path' => $p['image'], 'alt' => $p['title']]];
         <strong>سازگاری</strong><?= icon('check', 'icon--sm') ?> مناسب همه خودروهای سواری
         <?php elseif ($p['vehicles']): ?>
         <strong>خودروهای سازگار</strong>
-        <?php foreach ($p['vehicles'] as $v): ?><a class="chip" href="products?vehicle=<?= e($v['slug']) ?>"><?= e($v['name']) ?></a><?php endforeach; ?>
-        <?php else: ?><strong>سازگاری</strong> با کارشناسان ما مشورت کنید.<?php endif; ?>
+        <?php foreach ($p['vehicles'] as $v): ?><a class="chip" href="products?vehicle=<?= e($v['slug']) ?>" title="<?= e($v['note'] ?? '') ?>"><?= e($v['brand'] . ' ' . $v['name']) ?>
+          <small><?= e(fa_digits($v['year_from'] === $v['year_to'] ? (string) $v['year_from'] : $v['year_from'] . '–' . $v['year_to'])) ?></small></a><?php endforeach; ?>
+        <?php else: ?><strong>سازگاری</strong> اطلاعات سازگاری این کالا ثبت نشده است؛ پیش از خرید با کارشناسان ما مشورت کنید.<?php endif; ?>
       </div>
+      <form class="fitment" id="fitment-form" data-product="<?= e((string) $p['id']) ?>" novalidate>
+        <p class="fitment__title"><?= icon('car', 'icon--sm') ?> آیا این کالا با خودروی من سازگار است؟</p>
+        <div class="fitment__fields">
+          <label class="visually-hidden" for="fit-brand">برند خودرو</label><select class="select" id="fit-brand" name="brand" disabled><option>در حال بارگذاری…</option></select>
+          <label class="visually-hidden" for="fit-model">مدل خودرو</label><select class="select" id="fit-model" name="model" disabled></select>
+          <label class="visually-hidden" for="fit-year">سال تولید</label><select class="select" id="fit-year" name="year" disabled></select>
+          <button type="submit" class="btn btn--dark btn--sm">بررسی</button>
+        </div>
+        <p class="form-error" role="alert"></p>
+        <div class="fitment__result" aria-live="polite"></div>
+      </form>
     </div>
 
     <aside class="buybox" aria-label="خرید">

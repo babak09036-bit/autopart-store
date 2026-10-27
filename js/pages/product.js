@@ -26,6 +26,34 @@
     main.addEventListener('mouseleave', function () { main.classList.remove('is-zoom'); img.style.transformOrigin = ''; });
   }
 
+  /* ---------------- Vehicle fitment check (answer comes from the server) ---------------- */
+  var fit = document.getElementById('fitment-form');
+  if (fit && AP.VehicleSelector) {
+    var fitOut = fit.querySelector('.fitment__result');
+    AP.api.get('vehicles').then(function (vehicles) {
+      if (!vehicles.length) { fit.hidden = true; return; }
+      AP.VehicleSelector(fit, vehicles, function (sel) {
+        fitOut.innerHTML = '<p class="field__hint">در حال بررسی…</p>';
+        AP.api.get('products/' + fit.dataset.product + '/fitment', { vehicle: sel.model, year: sel.year }).then(function (r) {
+          var car = '<strong>' + esc(r.vehicle.brand + ' ' + r.vehicle.label) + '</strong>';
+          var years = r.match ? u.faDigits(r.match.year_from) + ' تا ' + u.faDigits(r.match.year_to) : '';
+          var msg = {
+            fits: [true, 'این کالا با ' + car + ' سازگار است.' + (r.match && r.match.note ? ' <span>(' + esc(r.match.note) + ')</span>' : '')],
+            universal: [true, 'این کالا عمومی است و با ' + car + ' هم سازگار است.'],
+            year: [false, 'این کالا برای ' + esc(r.vehicle.brand + ' ' + r.vehicle.name) + ' فقط مدل‌های ' + years + ' مناسب است، نه ' + car + '.'],
+            no: [false, 'این کالا با ' + car + ' سازگار نیست. محصولات مناسب خودروی خود را <a href="products?vehicle=' + encodeURIComponent(sel.model) + '&amp;year=' + sel.year + '">اینجا</a> ببینید.'],
+            unknown: [null, 'اطلاعات سازگاری این کالا ثبت نشده است؛ پیش از خرید با پشتیبانی تماس بگیرید.']
+          }[r.status];
+          fitOut.innerHTML = '<p class="fitment__msg fitment__msg--' + (msg[0] === true ? 'ok' : msg[0] === false ? 'no' : 'unknown') + '">' +
+            icon(msg[0] === true ? 'check' : 'alert') + '<span>' + msg[1] + '</span></p>';
+        }).catch(function (err) { fitOut.innerHTML = '<p class="form-error">' + esc(err.message) + '</p>'; });
+      }, AP.garage.get());
+      var saved = AP.garage.get();
+      if (saved && fit.elements.year.value) fit.requestSubmit();
+    }).catch(function () { fit.hidden = true; });
+  }
+  function icon(name) { return '<svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/icons.svg#i-' + name + '"></use></svg>'; }
+
   /* ---------------- Variant + quantity ---------------- */
   var variant = document.getElementById('variant');
   var qty = document.getElementById('qty');

@@ -330,7 +330,8 @@
         case 'color': out[f.name] = form.querySelector('[data-color-none="' + f.name + '"]').checked ? '' : el.value; break;
         case 'html': if (A.Editor) A.Editor.sync(form, f.name); out[f.name] = el.value; break;
         case 'number': out[f.name] = el.value === '' ? '' : A.en(el.value); break;
-        default: out[f.name] = el ? A.en(el.value).trim() : '';
+        // technical fields (left-to-right, email, url) get Latin digits; Persian text keeps its own digits
+        default: out[f.name] = el ? (f.dir === 'ltr' || f.type === 'email' || f.type === 'url' ? A.en(el.value) : el.value).trim() : '';
       }
     });
     return out;
@@ -395,7 +396,7 @@
         rows = d.items;
         if (opts.onData) opts.onData(d, root);
         body.innerHTML = rows.length ? rows.map(function (r, i) {
-          return '<tr data-i="' + i + '">' + opts.columns.map(function (c) { return '<td>' + (c.render ? c.render(r) : A.esc(r[c.key])) + '</td>'; }).join('') +
+          return '<tr data-i="' + i + '">' + opts.columns.map(function (c) { return '<td>' + (c.render ? c.render(r) : /^-?\d+$/.test(String(r[c.key])) ? A.fa(r[c.key]) : A.esc(r[c.key])) + '</td>'; }).join('') +
             (opts.actions ? '<td class="a-actions">' + opts.actions(r) + '</td>' : '') + '</tr>';
         }).join('') : '<tr><td colspan="99"><div class="a-empty">' + (opts.empty || 'موردی یافت نشد.') + '</div></td></tr>';
         var p = d.pagination;

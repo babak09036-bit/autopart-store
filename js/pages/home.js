@@ -255,13 +255,13 @@
     var out = sec.querySelector('#vehicle-result');
     AP.VehicleSelector(sec.querySelector('form'), data.data.vehicles, function (sel) {
       out.innerHTML = '<p class="field__hint">در حال جستجو…</p>';
-      AP.api.get('products', { vehicle: sel.model, per_page: 12, sort: 'popular' }).then(function (res) {
+      AP.api.get('products', { vehicle: sel.model, year: sel.year, per_page: 12, sort: 'popular' }).then(function (res) {
         out.innerHTML = '<div class="vehicle__summary"><p>برای <strong>' + esc(sel.modelName) + ' مدل ' + u.faDigits(sel.year) + '</strong> ' +
-          u.num(res.pagination.total) + ' محصول سازگار پیدا شد.</p><a class="btn btn--light btn--sm" href="products?vehicle=' + encodeURIComponent(sel.model) + '">مشاهده همه محصولات سازگار</a></div>' +
+          u.num(res.pagination.total) + ' محصول سازگار پیدا شد.</p><a class="btn btn--light btn--sm" href="products?vehicle=' + encodeURIComponent(sel.model) + '&amp;year=' + encodeURIComponent(sel.year) + '">مشاهده همه محصولات سازگار</a></div>' +
           '<div class="grid-products">' + AP.cards(res.items) + '</div>';
         out.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }).catch(function (err) { out.innerHTML = '<p class="form-error">' + esc(err.message) + '</p>'; });
-    });
+    }, AP.garage.get());
   });
 
   AP.initCarousels(root);

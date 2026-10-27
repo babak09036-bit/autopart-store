@@ -350,3 +350,4 @@ select.a-input { padding-inline-end: 28px; }
 @media (prefers-reduced-motion: reduce) {
   .admin-body *, .admin-body *::before, .admin-body *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+.a-row__body [data-fmodel] { grid-column: span 2; }

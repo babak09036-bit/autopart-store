@@ -43,7 +43,9 @@ final class ActivityLogger
         $changes = [];
         foreach ($after as $key => $value) {
             $old = $before[$key] ?? null;
-            if ((string) json_encode($old) !== (string) json_encode($value) && (string) $old !== (string) $value) {
+            // "1850000.00" from the database equals 1850000 from the form
+            $sameNumber = is_numeric($old) && is_numeric($value) && (float) $old === (float) $value;
+            if (!$sameNumber && (string) json_encode($old) !== (string) json_encode($value) && (string) $old !== (string) $value) {
                 $changes[$key] = [$old, $value];
             }
         }

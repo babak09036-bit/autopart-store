@@ -12,6 +12,9 @@ use App\Core\HttpException;
  */
 final class Validator
 {
+    /** Rules whose values are normalised to Latin digits before checking. */
+    private const TECHNICAL = ['int', 'numeric', 'mobile', 'email', 'url', 'path', 'slug', 'date', 'color', 'bool', 'in', 'regex'];
+
     private const LABELS = [
         'required' => 'این فیلد الزامی است.',
         'string' => 'مقدار باید متن باشد.',
@@ -37,7 +40,10 @@ final class Validator
             $present = array_key_exists($field, $data);
             $value = $data[$field] ?? null;
             if (is_string($value)) {
-                $value = trim(\to_en_digits($value));
+                // Persian/Arabic digits become Latin only in technical values; free text (names, articles, addresses) keeps them.
+                // Passwords too, so the same password typed on a Persian or English keyboard matches.
+                $technical = array_intersect(array_map(static fn ($r) => explode(':', (string) $r, 2)[0], $ruleList), self::TECHNICAL) || str_contains((string) $field, 'password');
+                $value = trim($technical ? \to_en_digits($value) : $value);
             }
             $nullable = in_array('nullable', $ruleList, true);
             $sometimes = in_array('sometimes', $ruleList, true);

@@ -12,8 +12,14 @@
     select.disabled = items.length === 0;
   }
 
-  /** form needs selects named brand, model, year. onSubmit({brand, model, modelName, year}). */
-  AP.VehicleSelector = function (form, vehicles, onSubmit) {
+  /** The visitor's chosen vehicle, remembered in this browser only ({brand, model, modelName, year}). */
+  AP.garage = {
+    get: function () { try { return JSON.parse(localStorage.getItem('ap_vehicle') || 'null'); } catch (e) { return null; } },
+    set: function (v) { try { localStorage.setItem('ap_vehicle', JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+  };
+
+  /** form needs selects named brand, model, year. onSubmit({brand, model, modelName, year}). initial preselects a saved vehicle. */
+  AP.VehicleSelector = function (form, vehicles, onSubmit, initial) {
     var brand = form.elements.brand, model = form.elements.model, year = form.elements.year;
     var error = form.querySelector('.form-error');
     var current = null;
@@ -51,7 +57,18 @@
         (!brand.value ? brand : !current ? model : year).focus();
         return;
       }
-      onSubmit({ brand: brand.value, model: current.slug, modelName: current.name, year: y });
+      var sel = { brand: brand.value, model: current.slug, modelName: (brandData() || {}).name + ' ' + current.name, year: y };
+      AP.garage.set(sel);
+      onSubmit(sel);
     });
+
+    if (initial && initial.brand) {
+      brand.value = initial.brand;
+      if (brand.value) {
+        brand.dispatchEvent(new Event('change'));
+        model.value = initial.model;
+        if (model.value) { model.dispatchEvent(new Event('change')); year.value = String(initial.year || ''); }
+      }
+    }
   };
 })();

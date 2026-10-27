@@ -231,3 +231,18 @@
 
 /* seeded placeholder testimonials */
 .review__sample { margin: 8px 0 0; font-size: 12px; color: var(--warning); }
+
+/* vehicle fitment checker (product page) */
+.compat .chip small { color: var(--muted); margin-inline-start: 4px; }
+.fitment { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--white); }
+.fitment__title { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .9rem; font-weight: 700; }
+.fitment__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px; }
+.fitment__fields .select { min-width: 0; }
+@media (max-width: 560px) { .fitment__fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.fitment__msg { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0 0; padding: 10px 12px; border-radius: 8px; font-size: .88rem; }
+.fitment__msg .icon { flex-shrink: 0; margin-top: 3px; }
+.fitment__msg--ok { background: var(--success-soft); color: var(--success); }
+.fitment__msg--no { background: var(--red-soft); color: var(--red-dark); }
+.fitment__msg--unknown { background: var(--warning-soft); color: var(--warning); }
+.fitment__msg a { color: inherit; text-decoration: underline; }
+.my-car { margin-top: 8px; }

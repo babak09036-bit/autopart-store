@@ -44,6 +44,7 @@ final class ProductController extends AdminController
         'attributes' => 'nullable|array|max:40',
         'variants' => 'nullable|array|max:30',
         'vehicle_model_ids' => 'nullable|array',
+        'vehicles' => 'nullable|array|max:300',
         'related_ids' => 'nullable|array|max:20',
         'complementary_ids' => 'nullable|array|max:20',
     ];
@@ -113,6 +114,7 @@ final class ProductController extends AdminController
         $p['variants'] = Database::all('SELECT v.id, v.name, v.sku, v.price, v.is_active, COALESCE(i.quantity, 0) AS stock FROM product_variants v
             LEFT JOIN inventory i ON i.product_id = v.product_id AND i.variant_id = v.id WHERE v.product_id = :id ORDER BY v.sort_order, v.id', ['id' => $id]);
         $p['vehicle_model_ids'] = array_map('intval', array_column(Database::all('SELECT vehicle_model_id FROM product_vehicle_compat WHERE product_id = :id', ['id' => $id]), 'vehicle_model_id'));
+        $p['vehicles'] = Database::all('SELECT vehicle_model_id, year_from, year_to, note FROM product_vehicle_compat WHERE product_id = :id', ['id' => $id]);
         $p['related_ids'] = array_map('intval', array_column(Database::all("SELECT related_product_id FROM product_relations WHERE product_id = :id AND type = 'related' ORDER BY sort_order", ['id' => $id]), 'related_product_id'));
         $p['complementary_ids'] = array_map('intval', array_column(Database::all("SELECT related_product_id FROM product_relations WHERE product_id = :id AND type = 'complementary' ORDER BY sort_order", ['id' => $id]), 'related_product_id'));
         $p['movements'] = array_map(static fn ($m) => $m + ['at' => fa_date($m['created_at'], true)], Database::all('SELECT change_qty, quantity_after, reason, note, created_at FROM inventory_movements WHERE product_id = :id ORDER BY id DESC LIMIT 15', ['id' => $id]));
@@ -238,6 +240,17 @@ final class ProductController extends AdminController
                 $errors['images'] = 'مسیر تصویر شماره ' . fa_digits($i + 1) . ' معتبر نیست.';
             }
         }
+        $models = !empty($data['vehicles']) ? array_column(Database::all('SELECT id, year_from, year_to FROM vehicle_models'), null, 'id') : [];
+        foreach ((array) ($data['vehicles'] ?? []) as $i => $v) {
+            $m = is_array($v) ? ($models[(int) ($v['vehicle_model_id'] ?? 0)] ?? null) : null;
+            $from = is_array($v) && ($v['year_from'] ?? '') !== '' ? (int) to_en_digits((string) $v['year_from']) : null;
+            $to = is_array($v) && ($v['year_to'] ?? '') !== '' ? (int) to_en_digits((string) $v['year_to']) : null;
+            if (!$m) {
+                $errors['vehicles'] = 'خودروی ردیف ' . fa_digits((string) ($i + 1)) . ' انتخاب نشده یا معتبر نیست.';
+            } elseif (($from && ($from < $m['year_from'] || $from > $m['year_to'])) || ($to && ($to < $m['year_from'] || $to > $m['year_to'])) || ($from && $to && $from > $to)) {
+                $errors['vehicles'] = 'سال‌های ردیف ' . fa_digits((string) ($i + 1)) . ' باید بین ' . fa_digits($m['year_from'] . ' و ' . $m['year_to']) . ' باشد و سال شروع بعد از سال پایان نباشد.';
+            }
+        }
         foreach ((array) ($data['variants'] ?? []) as $i => $v) {
             if (!is_array($v) || trim((string) ($v['name'] ?? '')) === '' || (isset($v['price']) && $v['price'] !== '' && $v['price'] !== null && !is_numeric($v['price']))) {
                 $errors['variants'] = 'اطلاعات تنوع شماره ' . fa_digits($i + 1) . ' کامل نیست.';
@@ -328,10 +341,15 @@ final class ProductController extends AdminController
         Database::query('DELETE FROM product_variants WHERE product_id = :id' . ($keep ? ' AND id NOT IN ' . Database::in('k', $keep, $params) : ''), $params);
         $params = ['id' => $id];
         Database::query('DELETE FROM inventory WHERE product_id = :id AND variant_id > 0' . ($keep ? ' AND variant_id NOT IN ' . Database::in('k', $keep, $params) : ''), $params);
-        // Vehicle compatibility
+        // Vehicle compatibility: "vehicles" rows (model + optional year range + note); the older "vehicle_model_ids" list is still accepted
+        $rows = array_key_exists('vehicles', $d) && $d['vehicles'] !== null ? (array) $d['vehicles']
+            : array_map(static fn ($m) => ['vehicle_model_id' => $m], (array) ($d['vehicle_model_ids'] ?? []));
         Database::query('DELETE FROM product_vehicle_compat WHERE product_id = :id', ['id' => $id]);
-        foreach (array_unique(array_map('intval', (array) ($d['vehicle_model_ids'] ?? []))) as $m) {
-            Database::query('INSERT IGNORE INTO product_vehicle_compat (product_id, vehicle_model_id) SELECT :p, id FROM vehicle_models WHERE id = :m', ['p' => $id, 'm' => $m]);
+        foreach ($rows as $v) {
+            $year = static fn ($y) => isset($y) && $y !== '' ? (int) to_en_digits((string) $y) : null;
+            Database::query('INSERT IGNORE INTO product_vehicle_compat (product_id, vehicle_model_id, year_from, year_to, note) SELECT :p, id, :f, :t, :n FROM vehicle_models WHERE id = :m',
+                ['p' => $id, 'm' => (int) ($v['vehicle_model_id'] ?? 0), 'f' => $year($v['year_from'] ?? null), 't' => $year($v['year_to'] ?? null),
+                    'n' => isset($v['note']) && trim((string) $v['note']) !== '' ? mb_substr(trim((string) $v['note']), 0, 160) : null]);
         }
         // Related / complementary
         Database::query('DELETE FROM product_relations WHERE product_id = :id', ['id' => $id]);
