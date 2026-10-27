@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>سبد خرید | اتوپارت</title>
+  <meta name="description" content="سبد خرید شما در فروشگاه اتوپارت.">
+  <meta name="theme-color" content="#D71920">
+  <link rel="icon" href="assets/images/ui/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <script src="js/utils.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/favorites.js" defer></script>
+  <script src="js/search.js" defer></script>
+  <script src="js/sliders.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/pages/cart-page.js" defer></script>
+</head>
+<body data-page="cart">
+  <a class="skip-link" href="#main">پرش به محتوای اصلی</a>
+  <header id="site-header" class="site-header"></header>
+
+  <main id="main" class="container">
+    <nav aria-label="مسیر صفحه">
+      <ol class="breadcrumb">
+        <li><a href="index.html">خانه</a></li>
+        <li aria-current="page">سبد خرید</li>
+      </ol>
+    </nav>
+    <h1 class="page-title">سبد خرید <small id="cart-count"></small></h1>
+    <div id="cart-root"></div>
+
+    <section class="section" id="cart-suggest" aria-labelledby="suggest-title" hidden>
+      <div class="section-head"><h2 id="suggest-title" class="section-head__title">شاید این‌ها را هم لازم داشته باشید</h2></div>
+      <div class="carousel" data-carousel>
+        <button type="button" class="carousel__btn carousel__btn--prev" data-prev aria-label="قبلی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-right"></use></svg></button>
+        <div class="carousel__track" id="suggest-track"></div>
+        <button type="button" class="carousel__btn carousel__btn--next" data-next aria-label="بعدی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></button>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+</body>
+</html>

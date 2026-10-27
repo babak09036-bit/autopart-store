@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>اتوپارت | فروشگاه اینترنتی لوازم جانبی و تجهیزات خودرو</title>
+  <meta name="description" content="خرید اینترنتی لوازم جانبی، روغن موتور، فیلتر، ابزار، تجهیزات الکترونیکی و نظافت خودرو با ضمانت اصالت و ارسال سریع از اتوپارت.">
+  <meta name="theme-color" content="#D71920">
+  <link rel="icon" href="assets/images/ui/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <script src="js/utils.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/favorites.js" defer></script>
+  <script src="js/search.js" defer></script>
+  <script src="js/sliders.js" defer></script>
+  <script src="js/vehicle-selector.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/pages/home.js" defer></script>
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main">پرش به محتوای اصلی</a>
+
+  <!-- 1–3: notice bar, main header and category menu (rendered by main.js) -->
+  <header id="site-header" class="site-header"></header>
+
+  <main id="main">
+    <h1 class="visually-hidden">اتوپارت؛ فروشگاه اینترنتی لوازم جانبی و تجهیزات خودرو</h1>
+
+    <!-- 4: hero slider -->
+    <section class="container section hero-wrap" aria-label="پیشنهادهای ویژه">
+      <div class="hero" data-hero aria-roledescription="carousel">
+        <div class="hero__viewport">
+          <div class="hero__track">
+            <div class="hero__slide hero__slide--dark" role="group" aria-roledescription="slide" aria-label="۱ از ۳">
+              <img src="assets/images/banners/hero-1.svg" alt="خودروی قرمز در جاده با چراغ‌های روشن" width="1200" height="400">
+              <div class="hero__content">
+                <span class="hero__eyebrow">فصل سفرهای جاده‌ای</span>
+                <h2 class="hero__title">همه‌چیز برای یک رانندگی بهتر</h2>
+                <p class="hero__text">تجهیزات حرفه‌ای خودرو با قیمت مناسب و ضمانت اصالت</p>
+                <a class="btn btn--primary" href="products.html">مشاهده محصولات</a>
+              </div>
+            </div>
+            <div class="hero__slide hero__slide--light" role="group" aria-roledescription="slide" aria-label="۲ از ۳">
+              <img src="assets/images/banners/hero-2.svg" alt="کمپرسور باد، جامپ استارتر و دوربین ثبت وقایع" width="1200" height="400">
+              <div class="hero__content">
+                <span class="hero__eyebrow">همراه همیشگی در جاده</span>
+                <h2 class="hero__title">تجهیزات اضطراری خودرو</h2>
+                <p class="hero__text">کمپرسور، جامپ استارتر و دوربین ثبت وقایع تا ۲۰٪ تخفیف</p>
+                <a class="btn btn--primary" href="products.html?cat=tools,electronics,camera">مشاهده محصولات</a>
+              </div>
+            </div>
+            <div class="hero__slide hero__slide--red" role="group" aria-roledescription="slide" aria-label="۳ از ۳">
+              <img src="assets/images/banners/hero-3.svg" alt="شامپو، اسپری و واکس براق‌کننده بدنه خودرو" width="1200" height="400">
+              <div class="hero__content">
+                <span class="hero__eyebrow">مراقبت حرفه‌ای از بدنه</span>
+                <h2 class="hero__title">درخشش بدنه، مثل روز اول</h2>
+                <p class="hero__text">شامپو، واکس و پولیش با ارسال رایگان برای خرید بالای ۲ میلیون تومان</p>
+                <a class="btn btn--white" href="category.html?cat=cleaning">مشاهده محصولات</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="hero__nav hero__nav--prev" data-prev aria-label="اسلاید قبلی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-right"></use></svg></button>
+        <button type="button" class="hero__nav hero__nav--next" data-next aria-label="اسلاید بعدی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></button>
+        <div class="hero__dots"></div>
+      </div>
+    </section>
+
+    <!-- 5: quick categories -->
+    <section class="container section" aria-labelledby="quick-cats-title">
+      <h2 id="quick-cats-title" class="visually-hidden">دسته‌بندی‌های سریع</h2>
+      <ul class="quick-cats" id="quick-cats"></ul>
+    </section>
+
+    <!-- 6: amazing offers -->
+    <section class="container section" aria-labelledby="amazing-title">
+      <div class="amazing">
+        <div class="amazing__intro">
+          <h2 id="amazing-title" class="amazing__title">پیشنهادهای شگفت‌انگیز</h2>
+          <svg class="amazing__flash" aria-hidden="true"><use href="assets/icons/icons.svg#i-flash"></use></svg>
+          <div class="countdown" dir="ltr" role="timer" aria-label="زمان باقی‌مانده تا پایان پیشنهادها">
+            <span data-cd="h">۰۰</span><b>:</b><span data-cd="m">۰۰</span><b>:</b><span data-cd="s">۰۰</span>
+          </div>
+          <a class="amazing__all" href="products.html?amazing=1">مشاهده همه<svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="carousel amazing__carousel" data-carousel>
+          <button type="button" class="carousel__btn carousel__btn--prev" data-prev aria-label="محصولات قبلی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-right"></use></svg></button>
+          <div class="carousel__track" id="amazing-track"></div>
+          <button type="button" class="carousel__btn carousel__btn--next" data-next aria-label="محصولات بعدی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7: promo banners -->
+    <section class="container section promo-grid" aria-label="بنرهای تبلیغاتی">
+      <a class="promo promo--dark" href="category.html?cat=electronics">
+        <img src="assets/images/banners/promo-electronics.svg" alt="" width="800" height="360" loading="lazy">
+        <div class="promo__content">
+          <span class="promo__eyebrow">تا ۲۵٪ تخفیف</span>
+          <h2 class="promo__title">تجهیزات الکترونیکی خودرو</h2>
+          <p>مانیتور اندرویدی، دوربین و شارژرهای فست</p>
+          <span class="btn btn--white btn--sm">خرید کنید</span>
+        </div>
+      </a>
+      <a class="promo promo--light" href="category.html?cat=cleaning">
+        <img src="assets/images/banners/promo-cleaning.svg" alt="" width="800" height="360" loading="lazy">
+        <div class="promo__content">
+          <span class="promo__eyebrow">برق بدنه بدون خش</span>
+          <h2 class="promo__title">لوازم نظافت و مراقبت</h2>
+          <p>شامپو، اسپری و مایکروفایبر حرفه‌ای</p>
+          <span class="btn btn--primary btn--sm">خرید کنید</span>
+        </div>
+      </a>
+      <a class="promo promo--warm" href="category.html?cat=travel">
+        <img src="assets/images/banners/promo-travel.svg" alt="" width="800" height="360" loading="lazy">
+        <div class="promo__content">
+          <span class="promo__eyebrow">آماده آخر هفته</span>
+          <h2 class="promo__title">تجهیزات سفر و کمپینگ</h2>
+          <p>چادر، یخچال فندکی و لوازم سفر</p>
+          <span class="btn btn--white btn--sm">خرید کنید</span>
+        </div>
+      </a>
+    </section>
+
+    <!-- 8: visual categories -->
+    <section class="container section" aria-labelledby="visual-cats-title">
+      <div class="section-head">
+        <h2 id="visual-cats-title" class="section-head__title">خرید بر اساس نیاز خودرو</h2>
+      </div>
+      <div class="visual-cats" id="visual-cats"></div>
+    </section>
+
+    <!-- 9: best sellers -->
+    <section class="container section" aria-labelledby="best-title">
+      <div class="panel">
+        <div class="section-head">
+          <h2 id="best-title" class="section-head__title">پرفروش‌ترین محصولات</h2>
+          <a class="link-more" href="products.html?best=1">مشاهده همه<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="ranked-grid" id="bestsellers"></div>
+      </div>
+    </section>
+
+    <!-- 10: popular brands -->
+    <section class="container section" aria-labelledby="brands-title">
+      <div class="section-head">
+        <h2 id="brands-title" class="section-head__title">برندهای محبوب</h2>
+        <a class="link-more" href="products.html">همه برندها<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+      </div>
+      <div class="carousel" data-carousel>
+        <button type="button" class="carousel__btn carousel__btn--prev" data-prev aria-label="برندهای قبلی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-right"></use></svg></button>
+        <div class="carousel__track brand-track" id="brands"></div>
+        <button type="button" class="carousel__btn carousel__btn--next" data-next aria-label="برندهای بعدی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></button>
+      </div>
+    </section>
+
+    <!-- 11: newest products -->
+    <section class="container section" aria-labelledby="new-title">
+      <div class="newest">
+        <div class="section-head newest__head">
+          <h2 id="new-title" class="section-head__title">جدیدترین محصولات <span class="section-head__sub">تازه‌های این هفته انبار</span></h2>
+          <a class="link-more" href="products.html?sort=new">مشاهده همه<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="grid-products" id="newest"></div>
+      </div>
+    </section>
+
+    <!-- 12: car cleaning -->
+    <section class="container section" aria-labelledby="cleaning-title">
+      <div class="feature-split feature-split--sky">
+        <div class="feature-split__intro">
+          <h2 id="cleaning-title">محصولات نظافت خودرو</h2>
+          <p>از شامپو و فوم تا واکس کارنوبا؛ هر آنچه برای براق نگه داشتن بدنه و کابین لازم دارید.</p>
+          <img src="assets/images/categories/beauty.svg" alt="" width="600" height="360" loading="lazy">
+          <a class="btn btn--primary" href="category.html?cat=cleaning">همه محصولات نظافت</a>
+        </div>
+        <div class="feature-split__grid" id="cleaning"></div>
+      </div>
+    </section>
+
+    <!-- 13: electronics -->
+    <section class="band band--navy section" aria-labelledby="electronics-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="electronics-title" class="section-head__title">تجهیزات الکترونیکی خودرو</h2>
+          <a class="link-more link-more--light" href="category.html?cat=electronics">مشاهده همه<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="carousel" data-carousel>
+          <button type="button" class="carousel__btn carousel__btn--prev" data-prev aria-label="محصولات قبلی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-right"></use></svg></button>
+          <div class="carousel__track" id="electronics"></div>
+          <button type="button" class="carousel__btn carousel__btn--next" data-next aria-label="محصولات بعدی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14: interior -->
+    <section class="container section" aria-labelledby="interior-title">
+      <div class="panel">
+        <div class="section-head">
+          <h2 id="interior-title" class="section-head__title">لوازم داخلی خودرو <span class="section-head__sub">کابینی مرتب و راحت</span></h2>
+          <a class="link-more" href="category.html?cat=interior">مشاهده همه<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="compact-grid" id="interior"></div>
+      </div>
+    </section>
+
+    <!-- 15: workshop tools -->
+    <section class="container section" aria-labelledby="tools-title">
+      <div class="section-head">
+        <h2 id="tools-title" class="section-head__title">ابزار و تجهیزات تعمیرگاهی</h2>
+        <a class="link-more" href="category.html?cat=tools">مشاهده همه<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+      </div>
+      <div class="mosaic" id="tools"></div>
+    </section>
+
+    <!-- 16: oil & filters -->
+    <section class="container section" aria-labelledby="oil-title">
+      <div class="panel panel--sand">
+        <div class="section-head">
+          <h2 id="oil-title" class="section-head__title">روغن و فیلتر خودرو</h2>
+          <div class="tabs" role="tablist" aria-label="فیلتر روغن و فیلتر">
+            <button type="button" class="chip" role="tab" aria-selected="true" aria-controls="oil" data-oil-tab="all">همه</button>
+            <button type="button" class="chip" role="tab" aria-selected="false" aria-controls="oil" data-oil-tab="oil">روغن‌ها</button>
+            <button type="button" class="chip" role="tab" aria-selected="false" aria-controls="oil" data-oil-tab="filter">فیلترها</button>
+            <button type="button" class="chip" role="tab" aria-selected="false" aria-controls="oil" data-oil-tab="fluid">مایعات</button>
+          </div>
+        </div>
+        <div class="grid-products" id="oil" role="tabpanel" aria-labelledby="oil-title"></div>
+      </div>
+    </section>
+
+    <!-- 17: economy deals -->
+    <section class="container section" aria-labelledby="economy-title">
+      <div class="economy">
+        <div class="economy__banner">
+          <img src="assets/images/banners/economy.svg" alt="" width="1200" height="240" loading="lazy">
+          <div class="economy__text">
+            <h2 id="economy-title">فرصت‌های خرید اقتصادی</h2>
+            <p>کالاهای تخفیف‌دار با قیمت قبل و بعد؛ بر اساس نیاز خود مرتب کنید.</p>
+          </div>
+        </div>
+        <div class="economy__tools">
+          <label for="economy-sort">مرتب‌سازی:</label>
+          <select class="select select--inline" id="economy-sort">
+            <option value="discount">بیشترین تخفیف</option>
+            <option value="cheap">ارزان‌ترین</option>
+            <option value="expensive">گران‌ترین</option>
+            <option value="popular">محبوب‌ترین</option>
+          </select>
+          <a class="link-more" href="products.html?discount=1">مشاهده همه محصولات تخفیف‌دار<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="grid-products" id="economy"></div>
+      </div>
+    </section>
+
+    <!-- 18: vehicle selector -->
+    <section class="container section" aria-labelledby="vehicle-title">
+      <div class="vehicle">
+        <div class="vehicle__head">
+          <svg class="vehicle__icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-car"></use></svg>
+          <div>
+            <h2 id="vehicle-title">انتخاب خودرو</h2>
+            <p>خودرو خود را انتخاب کنید تا فقط قطعات و لوازم سازگار را ببینید.</p>
+          </div>
+        </div>
+        <form class="vehicle__form" id="vehicle-form" novalidate>
+          <div class="field">
+            <label for="v-brand">برند خودرو</label>
+            <select class="select" id="v-brand" name="brand"></select>
+          </div>
+          <div class="field">
+            <label for="v-model">مدل</label>
+            <select class="select" id="v-model" name="model"></select>
+          </div>
+          <div class="field">
+            <label for="v-year">سال تولید</label>
+            <select class="select" id="v-year" name="year"></select>
+          </div>
+          <button type="submit" class="btn btn--primary vehicle__submit">مشاهده محصولات سازگار</button>
+          <p class="form-error" role="alert"></p>
+        </form>
+        <div class="vehicle__result" id="vehicle-result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- 19: expert picks -->
+    <section class="container section" aria-labelledby="expert-title">
+      <div class="panel panel--gold">
+        <div class="section-head">
+          <h2 id="expert-title" class="section-head__title">منتخب کارشناسان اتوپارت <span class="section-head__sub">انتخاب‌های تست‌شده در تعمیرگاه</span></h2>
+          <a class="link-more" href="products.html?expert=1">مشاهده همه<svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></a>
+        </div>
+        <div class="grid-products grid-products--4" id="expert"></div>
+      </div>
+    </section>
+
+    <!-- 20: buying guides -->
+    <section class="container section" id="guides" aria-labelledby="guides-title">
+      <div class="section-head">
+        <h2 id="guides-title" class="section-head__title">راهنمای خرید</h2>
+      </div>
+      <div class="guides" id="guide-list"></div>
+    </section>
+
+    <!-- 21: store benefits -->
+    <section class="container section" aria-labelledby="benefits-title">
+      <h2 id="benefits-title" class="visually-hidden">مزایای خرید از اتوپارت</h2>
+      <ul class="benefits">
+        <li class="benefit"><span class="benefit__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="assets/icons/icons.svg#i-shield"></use></svg></span><div><h3>ضمانت اصالت کالا</h3><p>همه کالاها مستقیم از نمایندگی و واردکننده رسمی</p></div></li>
+        <li class="benefit"><span class="benefit__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="assets/icons/icons.svg#i-truck"></use></svg></span><div><h3>ارسال سریع</h3><p>تحویل یک‌روزه در تهران و ۲ تا ۴ روزه در شهرستان‌ها</p></div></li>
+        <li class="benefit"><span class="benefit__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="assets/icons/icons.svg#i-headset"></use></svg></span><div><h3>پشتیبانی تخصصی</h3><p>مشاوره رایگان کارشناسان خودرو پیش و پس از خرید</p></div></li>
+        <li class="benefit"><span class="benefit__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="assets/icons/icons.svg#i-return"></use></svg></span><div><h3>بازگشت کالا</h3><p>تا ۷ روز طبق <a href="contact.html#returns">شرایط فروشگاه</a></p></div></li>
+      </ul>
+    </section>
+
+    <!-- 22: testimonials -->
+    <section class="container section" aria-labelledby="reviews-title">
+      <div class="section-head">
+        <h2 id="reviews-title" class="section-head__title">نظر مشتریان اتوپارت</h2>
+      </div>
+      <div class="carousel" data-carousel data-autoplay>
+        <button type="button" class="carousel__btn carousel__btn--prev" data-prev aria-label="نظر قبلی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-right"></use></svg></button>
+        <div class="carousel__track review-track" id="reviews"></div>
+        <button type="button" class="carousel__btn carousel__btn--next" data-next aria-label="نظر بعدی"><svg class="icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-chevron-left"></use></svg></button>
+      </div>
+    </section>
+
+    <!-- 23: newsletter -->
+    <section class="container section" aria-labelledby="newsletter-title">
+      <div class="newsletter">
+        <div class="newsletter__text">
+          <svg class="newsletter__icon" aria-hidden="true"><use href="assets/icons/icons.svg#i-mail"></use></svg>
+          <div>
+            <h2 id="newsletter-title">عضویت در خبرنامه اتوپارت</h2>
+            <p>اولین نفری باشید که از تخفیف‌های شگفت‌انگیز و راهنماهای نگهداری خودرو باخبر می‌شود.</p>
+          </div>
+        </div>
+        <form class="newsletter__form" id="newsletter-form" novalidate>
+          <label class="visually-hidden" for="newsletter-email">آدرس ایمیل</label>
+          <input class="input" id="newsletter-email" name="email" type="email" dir="ltr" placeholder="you@example.com" autocomplete="email" aria-describedby="newsletter-msg">
+          <button type="submit" class="btn btn--dark">عضویت</button>
+          <p class="newsletter__msg" id="newsletter-msg" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- 24: footer (rendered by main.js) -->
+  <footer id="site-footer" class="site-footer"></footer>
+</body>
+</html>

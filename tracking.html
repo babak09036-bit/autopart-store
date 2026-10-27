@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>پیگیری سفارش | اتوپارت</title>
+  <meta name="description" content="وضعیت سفارش خود را با کد پیگیری در اتوپارت ببینید.">
+  <meta name="theme-color" content="#D71920">
+  <link rel="icon" href="assets/images/ui/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <script src="js/utils.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/favorites.js" defer></script>
+  <script src="js/search.js" defer></script>
+  <script src="js/sliders.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/pages/tracking.js" defer></script>
+</head>
+<body data-page="tracking">
+  <a class="skip-link" href="#main">پرش به محتوای اصلی</a>
+  <header id="site-header" class="site-header"></header>
+
+  <main id="main" class="container">
+    <nav aria-label="مسیر صفحه">
+      <ol class="breadcrumb">
+        <li><a href="index.html">خانه</a></li>
+        <li aria-current="page">پیگیری سفارش</li>
+      </ol>
+    </nav>
+    <div class="track">
+      <h1 class="page-title">پیگیری سفارش</h1>
+      <form class="track__form" id="track-form" novalidate>
+        <div class="field">
+          <label for="track-code">کد پیگیری سفارش</label>
+          <input class="input" id="track-code" name="code" type="text" dir="ltr" placeholder="AP-100245" autocomplete="off" aria-describedby="track-error">
+        </div>
+        <button type="submit" class="btn btn--primary"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/icons.svg#i-search"></use></svg>پیگیری</button>
+        <p class="form-error" id="track-error" role="alert"></p>
+        <div class="track__samples" id="track-samples"></div>
+      </form>
+      <section class="track__result" id="track-result" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+</body>
+</html>

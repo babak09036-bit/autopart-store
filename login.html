@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ورود و ثبت‌نام | اتوپارت</title>
+  <meta name="description" content="ورود یا ثبت‌نام در فروشگاه اتوپارت.">
+  <meta name="theme-color" content="#D71920">
+  <link rel="icon" href="assets/images/ui/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <script src="js/utils.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/favorites.js" defer></script>
+  <script src="js/search.js" defer></script>
+  <script src="js/sliders.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/pages/login.js" defer></script>
+</head>
+<body data-page="login">
+  <a class="skip-link" href="#main">پرش به محتوای اصلی</a>
+  <header id="site-header" class="site-header"></header>
+
+  <main id="main" class="container">
+    <div class="auth">
+      <div class="auth__aside">
+        <h1>به اتوپارت خوش آمدید</h1>
+        <p>با ورود به حساب کاربری، سفارش‌های خود را پیگیری کنید، علاقه‌مندی‌ها را نگه دارید و از تخفیف‌های اختصاصی باخبر شوید.</p>
+        <img src="assets/images/banners/guide-travel.svg" alt="" width="640" height="360" loading="lazy">
+      </div>
+
+      <div class="auth__main" id="auth-main">
+        <div class="auth__tabs" role="tablist" aria-label="ورود یا ثبت‌نام">
+          <button type="button" role="tab" id="tab-login" aria-controls="login-form" aria-selected="true">ورود</button>
+          <button type="button" role="tab" id="tab-register" aria-controls="register-form" aria-selected="false" tabindex="-1">ثبت‌نام</button>
+        </div>
+
+        <div class="alert" id="auth-alert" role="alert" hidden></div>
+
+        <form id="login-form" role="tabpanel" aria-labelledby="tab-login" novalidate>
+          <div class="field">
+            <label for="login-mobile">شماره موبایل</label>
+            <input class="input" id="login-mobile" name="mobile" type="tel" inputmode="numeric" dir="ltr" placeholder="09xxxxxxxxx" autocomplete="tel" aria-describedby="login-mobile-error">
+            <p class="field__error" id="login-mobile-error"></p>
+          </div>
+          <div class="field">
+            <label for="login-password">رمز عبور</label>
+            <div class="password-field">
+              <input class="input" id="login-password" name="password" type="password" dir="ltr" autocomplete="current-password" aria-describedby="login-password-error">
+              <button type="button" data-toggle-password aria-label="نمایش رمز عبور" aria-pressed="false"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/icons.svg#i-eye"></use></svg></button>
+            </div>
+            <p class="field__error" id="login-password-error"></p>
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">ورود به حساب</button>
+          <p class="field__hint">این فرم نمایشی است؛ رمز عبور هیچ‌جا ذخیره یا ارسال نمی‌شود.</p>
+        </form>
+
+        <form id="register-form" role="tabpanel" aria-labelledby="tab-register" novalidate hidden>
+          <div class="field">
+            <label for="reg-name">نام و نام خانوادگی</label>
+            <input class="input" id="reg-name" name="name" type="text" autocomplete="name" aria-describedby="reg-name-error">
+            <p class="field__error" id="reg-name-error"></p>
+          </div>
+          <div class="field">
+            <label for="reg-mobile">شماره موبایل</label>
+            <input class="input" id="reg-mobile" name="mobile" type="tel" inputmode="numeric" dir="ltr" placeholder="09xxxxxxxxx" autocomplete="tel" aria-describedby="reg-mobile-error">
+            <p class="field__error" id="reg-mobile-error"></p>
+          </div>
+          <div class="field">
+            <label for="reg-password">رمز عبور</label>
+            <div class="password-field">
+              <input class="input" id="reg-password" name="password" type="password" dir="ltr" autocomplete="new-password" aria-describedby="reg-password-hint reg-password-error">
+              <button type="button" data-toggle-password aria-label="نمایش رمز عبور" aria-pressed="false"><svg class="icon icon--sm" aria-hidden="true"><use href="assets/icons/icons.svg#i-eye"></use></svg></button>
+            </div>
+            <p class="field__hint" id="reg-password-hint">حداقل ۸ کاراکتر</p>
+            <p class="field__error" id="reg-password-error"></p>
+          </div>
+          <div class="field">
+            <label for="reg-confirm">تکرار رمز عبور</label>
+            <input class="input" id="reg-confirm" name="confirm" type="password" dir="ltr" autocomplete="new-password" aria-describedby="reg-confirm-error">
+            <p class="field__error" id="reg-confirm-error"></p>
+          </div>
+          <label class="check"><input type="checkbox" name="terms" aria-describedby="reg-terms-error"><span><a href="contact.html#terms">قوانین و مقررات</a> و <a href="contact.html#privacy">حریم خصوصی</a> را می‌پذیرم.</span></label>
+          <p class="field__error" id="reg-terms-error"></p>
+          <button type="submit" class="btn btn--primary btn--block">ایجاد حساب کاربری</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+</body>
+</html>
