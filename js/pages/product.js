@@ -1,184 +1,224 @@
-/* Product details page. */
+/* Product page: gallery, variants, quantity, add to cart, tabs, reviews (list + submit) and questions. */
 (function () {
   'use strict';
 
   var AP = window.AP;
   var u = AP.utils;
-  var root = document.getElementById('product-root');
-  var product = AP.catalog.product(u.params().get('id'));
+  var esc = u.escape;
+  var P = (AP.boot && AP.boot.product) || {};
 
-  if (!product) {
-    document.title = 'محصول یافت نشد | اتوپارت';
-    root.innerHTML = '<div class="empty-state empty-state--panel">' +
-      '<img src="assets/images/ui/no-results.svg" alt="" width="320" height="240">' +
-      '<h1>محصول یافت نشد</h1><p>ممکن است نشانی اشتباه باشد یا این کالا از فروشگاه حذف شده باشد.</p>' +
-      '<a class="btn btn--primary" href="products.html">بازگشت به فهرست محصولات</a></div>';
-    return;
-  }
-
-  var p = product;
-  var cat = AP.catalog.category(p.category);
-  var brandName = AP.catalog.brandName(p.brand);
-  var off = u.discount(p);
-  document.title = p.title + ' | اتوپارت';
-
-  document.getElementById('breadcrumb').insertAdjacentHTML('beforeend',
-    '<li><a href="category.html?cat=' + cat.slug + '">' + cat.short + '</a></li><li aria-current="page">' + u.escape(p.title) + '</li>');
-
-  /* Sample reviews, picked deterministically from a pool so each product is stable. */
-  var POOL = [
-    ['رضا ک.', 5, 'کیفیت ساخت عالی است و دقیقاً مطابق توضیحات بود. ارسال هم سریع انجام شد.'],
-    ['الهام ن.', 4, 'برای این قیمت خیلی خوب است. فقط بسته‌بندی می‌توانست محکم‌تر باشد.'],
-    ['حسین ت.', 5, 'دومین بار است که از اتوپارت خرید می‌کنم؛ اصالت کالا را استعلام کردم و اصل بود.'],
-    ['فاطمه ج.', 4, 'کارشناس پشتیبانی برای انتخاب مدل درست راهنمایی خوبی کرد.'],
-    ['امیر س.', 3, 'کار راه‌انداز است ولی انتظار داشتم کمی قوی‌تر باشد.'],
-    ['زهرا ب.', 5, 'نصبش ساده بود و در سفر خیلی به کارم آمد. پیشنهاد می‌کنم.']
-  ];
-  var reviews = [0, 1, 2].map(function (k) { return POOL[(p.id + k * 2) % POOL.length]; });
-
-  var specsList = Object.keys(p.specs).slice(0, 4).map(function (k) {
-    return '<li><span>' + k + ':</span> ' + p.specs[k] + '</li>';
-  }).join('');
-
-  var compat;
-  if (p.compatibleVehicles === 'universal') {
-    compat = '<div class="compat"><strong>سازگاری</strong>' + u.icon('check', 'icon--sm') + ' مناسب همه خودروهای سواری</div>';
-  } else {
-    compat = '<div class="compat"><strong>خودروهای سازگار</strong>' + p.compatibleVehicles.map(function (m) {
-      var found = AP.catalog.model(m);
-      return '<a class="chip" href="products.html?vehicle=' + m + '">' + found.model.name + '</a>';
-    }).join('') + '</div>';
-  }
-
-  var stock = p.stock < 1 ? '<span class="stock stock--out">ناموجود</span>'
-    : p.stock <= 10 ? '<span class="stock stock--low">تنها ' + u.num(p.stock) + ' عدد در انبار باقی مانده</span>'
-      : '<span class="stock stock--in">' + u.icon('check', 'icon--sm') + 'موجود در انبار اتوپارت</span>';
-
-  var fav = AP.favs.has(p.id);
-
-  root.innerHTML =
-    '<article class="product">' +
-    '<div class="gallery">' +
-    '<div class="gallery__main" id="gallery-main"><img id="gallery-img" src="' + p.image + '" alt="' + u.escape(p.title) + '" width="400" height="400"></div>' +
-    '<div class="gallery__thumbs" role="group" aria-label="نماهای تصویر">' +
-    [['', 'نمای اصلی'], ['view-flip', 'نمای قرینه'], ['view-close', 'نمای نزدیک']].map(function (v, i) {
-      return '<button type="button" class="gallery__thumb ' + v[0] + '" data-view="' + v[0] + '" aria-pressed="' + (i === 0) + '" aria-label="' + v[1] + '">' +
-        '<img src="' + p.image + '" alt="" width="72" height="72"></button>';
-    }).join('') + '</div></div>' +
-
-    '<div class="product__info">' +
-    '<a class="product__brand" href="products.html?brand=' + p.brand + '">' + brandName + '</a>' +
-    '<h1>' + u.escape(p.title) + '</h1>' +
-    '<div class="product__meta">' + u.stars(p.rating) + '<span>' + u.faDigits(p.rating.toFixed(1)) + ' از ' + u.num(p.reviewsCount) + ' نظر</span>' +
-    '<span>کد کالا: AP-' + u.faDigits(String(p.id).padStart(4, '0')) + '</span>' +
-    '<a href="category.html?cat=' + cat.slug + '">' + cat.short + '</a>' +
-    (p.isNew ? '<span class="badge badge--new">جدید</span>' : '') +
-    (p.isExpertPick ? '<span class="badge badge--expert">' + u.icon('award', 'icon--sm') + 'منتخب کارشناس</span>' : '') + '</div>' +
-    '<p>' + u.escape(p.description) + '</p>' +
-    '<h2 class="visually-hidden">ویژگی‌های اصلی</h2><ul class="spec-list">' + specsList + '</ul>' + compat +
-    '</div>' +
-
-    '<aside class="buybox" aria-label="خرید">' +
-    stock +
-    '<div class="price">' + (off ? '<div class="price__old"><span class="visually-hidden">قیمت قبلی:</span><del>' + u.num(p.oldPrice) + '</del><span class="badge badge--red">' + u.num(off) + '٪ تخفیف</span></div>' : '') +
-    '<div class="price__now"><strong>' + u.num(p.price) + '</strong><span>تومان</span></div></div>' +
-    (p.stock > 0 ? '<div class="buybox__qty"><span>تعداد:</span><div class="qty">' +
-      '<button type="button" data-step="1" aria-label="افزایش تعداد">' + u.icon('plus', 'icon--sm') + '</button>' +
-      '<input id="qty" type="text" inputmode="numeric" value="۱" aria-label="تعداد">' +
-      '<button type="button" data-step="-1" aria-label="کاهش تعداد">' + u.icon('minus', 'icon--sm') + '</button></div></div>' +
-      '<button type="button" class="btn btn--primary btn--block" data-add="' + p.id + '" data-qty-from="qty">' + u.icon('cart', 'icon--sm') + 'افزودن به سبد خرید</button>'
-      : '<button type="button" class="btn btn--block" disabled>ناموجود</button>') +
-    '<button type="button" class="btn btn--light btn--block" data-fav="' + p.id + '" aria-pressed="' + fav + '">' + u.icon(fav ? 'heart-filled' : 'heart', 'icon--sm') + '<span>علاقه‌مندی</span></button>' +
-    '<div class="buybox__row">' + u.icon('truck') + 'ارسال از ۱ روز کاری؛ رایگان بالای ' + u.num(AP.cart.FREE_SHIPPING_FROM) + ' تومان</div>' +
-    '<div class="buybox__row">' + u.icon('shield') + 'ضمانت اصالت و سلامت فیزیکی کالا</div>' +
-    '<div class="buybox__row">' + u.icon('return') + '۷ روز ضمانت بازگشت طبق شرایط</div>' +
-    '</aside></article>' +
-
-    '<section class="tabs-panel" aria-label="اطلاعات تکمیلی">' +
-    '<div class="tabs-panel__list" role="tablist">' +
-    [['desc', 'توضیحات'], ['specs', 'مشخصات فنی'], ['reviews', 'نظرات (' + u.num(p.reviewsCount) + ')']].map(function (t, i) {
-      return '<button type="button" class="tabs-panel__tab" role="tab" id="tab-' + t[0] + '" aria-controls="panel-' + t[0] + '" aria-selected="' + (i === 0) + '" tabindex="' + (i === 0 ? 0 : -1) + '">' + t[1] + '</button>';
-    }).join('') + '</div>' +
-    '<div class="tabs-panel__body" role="tabpanel" id="panel-desc" aria-labelledby="tab-desc"><p>' + u.escape(p.description) + '</p>' +
-    '<p>' + u.escape(p.title) + ' از برند ' + brandName + ' در دسته ' + cat.name + ' عرضه می‌شود. پیش از خرید، بخش خودروهای سازگار و مشخصات فنی را بررسی کنید و در صورت نیاز با کارشناسان اتوپارت مشورت کنید.</p></div>' +
-    '<div class="tabs-panel__body" role="tabpanel" id="panel-specs" aria-labelledby="tab-specs" hidden><table class="spec-table"><tbody>' +
-    '<tr><th scope="row">برند</th><td>' + brandName + '</td></tr>' +
-    Object.keys(p.specs).map(function (k) { return '<tr><th scope="row">' + k + '</th><td>' + p.specs[k] + '</td></tr>'; }).join('') +
-    '</tbody></table></div>' +
-    '<div class="tabs-panel__body" role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" hidden><div class="review-list">' +
-    reviews.map(function (r) {
-      return '<div class="review-item"><div class="review-item__head"><strong>' + r[0] + '</strong>' + u.stars(r[1]) + '</div><p>' + r[2] + '</p></div>';
-    }).join('') + '<p class="field__hint">نظرات بالا نمونه و نمایشی هستند.</p></div></div>' +
-    '</section>' +
-
-    '<section class="section" aria-labelledby="related-title"><div class="section-head"><h2 id="related-title" class="section-head__title">محصولات مرتبط</h2>' +
-    '<a class="link-more" href="category.html?cat=' + cat.slug + '">مشاهده همه' + u.icon('chevron-left') + '</a></div>' +
-    '<div class="carousel" data-carousel>' +
-    '<button type="button" class="carousel__btn carousel__btn--prev" data-prev aria-label="قبلی">' + u.icon('chevron-right') + '</button>' +
-    '<div class="carousel__track" id="related"></div>' +
-    '<button type="button" class="carousel__btn carousel__btn--next" data-next aria-label="بعدی">' + u.icon('chevron-left') + '</button></div></section>';
-
-  /* Related: same category first, then same brand, then best sellers. */
-  var related = [];
-  function addAll(list) {
-    list.forEach(function (x) { if (x.id !== p.id && related.indexOf(x) === -1) related.push(x); });
-  }
-  addAll(AP.data.products.filter(function (x) { return x.category === p.category; }));
-  addAll(AP.data.products.filter(function (x) { return x.brand === p.brand; }));
-  addAll(AP.data.products.filter(function (x) { return x.isBestseller; }));
-  document.getElementById('related').innerHTML = AP.cards(related.slice(0, 10));
-  AP.initCarousels();
-
-  /* Gallery: views + hover zoom */
+  /* ---------------- Gallery ---------------- */
   var main = document.getElementById('gallery-main');
   var img = document.getElementById('gallery-img');
   u.$$('.gallery__thumb').forEach(function (btn) {
     btn.addEventListener('click', function () {
       u.$$('.gallery__thumb').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
-      main.classList.remove('view-flip', 'view-close');
-      if (btn.dataset.view) main.classList.add(btn.dataset.view);
+      img.src = btn.dataset.src;
+      img.alt = btn.dataset.alt;
     });
   });
-  main.addEventListener('mousemove', function (e) {
-    var r = main.getBoundingClientRect();
-    img.style.transformOrigin = ((e.clientX - r.left) / r.width * 100) + '% ' + ((e.clientY - r.top) / r.height * 100) + '%';
-  });
-  main.addEventListener('mouseenter', function () { main.classList.add('is-zoom'); });
-  main.addEventListener('mouseleave', function () { main.classList.remove('is-zoom'); img.style.transformOrigin = ''; });
+  if (main) {
+    main.addEventListener('mousemove', function (e) {
+      var r = main.getBoundingClientRect();
+      img.style.transformOrigin = ((e.clientX - r.left) / r.width * 100) + '% ' + ((e.clientY - r.top) / r.height * 100) + '%';
+    });
+    main.addEventListener('mouseenter', function () { main.classList.add('is-zoom'); });
+    main.addEventListener('mouseleave', function () { main.classList.remove('is-zoom'); img.style.transformOrigin = ''; });
+  }
 
-  /* Quantity stepper (bounded by stock) */
+  /* ---------------- Variant + quantity ---------------- */
+  var variant = document.getElementById('variant');
   var qty = document.getElementById('qty');
-  if (qty) {
-    var setQty = function (n) {
-      n = Math.max(1, Math.min(p.stock, Math.floor(n) || 1));
-      qty.value = u.faDigits(n);
-      u.$('[data-step="-1"]').disabled = n <= 1;
-      u.$('[data-step="1"]').disabled = n >= p.stock;
-    };
-    u.$$('[data-step]').forEach(function (b) {
-      b.addEventListener('click', function () { setQty(Number(u.enDigits(qty.value)) + Number(b.dataset.step)); });
+  function maxQty() {
+    if (variant) {
+      var opt = variant.options[variant.selectedIndex];
+      return Number(opt && opt.dataset.stock) || 0;
+    }
+    return Number(P.stock) || 0;
+  }
+  function setQty(n) {
+    if (!qty) return;
+    n = Math.max(1, Math.min(maxQty() || 1, Math.floor(n) || 1));
+    qty.value = u.faDigits(n);
+    var dec = u.$('[data-step="-1"]'), inc = u.$('[data-step="1"]');
+    if (dec) dec.disabled = n <= 1;
+    if (inc) inc.disabled = n >= maxQty();
+  }
+  if (variant) {
+    variant.addEventListener('change', function () {
+      var opt = variant.options[variant.selectedIndex];
+      document.getElementById('buy-price-now').textContent = u.num(opt.dataset.price);
+      setQty(1);
     });
+  }
+  u.$$('[data-step]').forEach(function (b) {
+    b.addEventListener('click', function () { setQty(Number(u.enDigits(qty.value)) + Number(b.dataset.step)); });
+  });
+  if (qty) {
     qty.addEventListener('change', function () { setQty(Number(u.enDigits(qty.value))); });
     setQty(1);
   }
+  var addBtn = document.getElementById('add-to-cart');
+  if (addBtn) {
+    addBtn.addEventListener('click', function () {
+      addBtn.disabled = true;
+      AP.cart.add(addBtn.dataset.product, Number(u.enDigits(qty.value)) || 1, variant ? Number(variant.value) : 0).then(function (res) {
+        addBtn.disabled = false;
+        AP.toast(res.ok ? '«' + P.title + '» به سبد خرید اضافه شد.' : res.message, res.ok ? 'success' : 'error');
+      });
+    });
+  }
 
-  /* Tabs with arrow-key support */
+  /* ---------------- Tabs ---------------- */
   var tabs = u.$$('.tabs-panel__tab');
-  function selectTab(tab) {
+  var loaded = {};
+  function selectTab(tab, focus) {
     tabs.forEach(function (t) {
       var on = t === tab;
       t.setAttribute('aria-selected', String(on));
       t.tabIndex = on ? 0 : -1;
       document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
     });
-    tab.focus();
+    if (focus) tab.focus();
+    if (tab.id === 'tab-reviews' && !loaded.reviews) { loaded.reviews = true; loadReviews(); }
+    if (tab.id === 'tab-questions' && !loaded.questions) { loaded.questions = true; loadQuestions(); }
   }
   tabs.forEach(function (t, i) {
-    t.addEventListener('click', function () { selectTab(t); });
+    t.addEventListener('click', function () { selectTab(t, false); });
     t.addEventListener('keydown', function (e) {
-      // RTL: left arrow moves to the next tab
-      if (e.key === 'ArrowLeft') selectTab(tabs[(i + 1) % tabs.length]);
-      if (e.key === 'ArrowRight') selectTab(tabs[(i - 1 + tabs.length) % tabs.length]);
+      if (e.key === 'ArrowLeft') selectTab(tabs[(i + 1) % tabs.length], true);
+      if (e.key === 'ArrowRight') selectTab(tabs[(i - 1 + tabs.length) % tabs.length], true);
     });
   });
+  if (location.hash === '#reviews') selectTab(document.getElementById('tab-reviews'), false);
+
+  /* ---------------- Reviews ---------------- */
+  var box = document.getElementById('reviews');
+  var rq = { sort: 'newest', rating: '', page: 1 };
+
+  function starsInput() {
+    return '<div class="star-input" role="radiogroup" aria-label="امتیاز شما">' + [5, 4, 3, 2, 1].map(function (n) {
+      return '<input type="radio" id="star-' + n + '" name="rating" value="' + n + '"><label for="star-' + n + '" title="' + u.faDigits(n) + ' ستاره">' + u.icon('star-filled') + '<span class="visually-hidden">' + u.faDigits(n) + ' ستاره</span></label>';
+    }).join('') + '</div>';
+  }
+
+  function formHTML(mine) {
+    if (!AP.boot.user) {
+      return '<div class="review-cta"><p>برای ثبت نظر ابتدا وارد حساب کاربری خود شوید.</p><a class="btn btn--primary btn--sm" href="login?next=' + encodeURIComponent(location.pathname) + '">ورود و ثبت نظر</a></div>';
+    }
+    if (mine) {
+      var label = { pending: 'در انتظار بررسی', approved: 'منتشر شده', rejected: 'تأیید نشده' }[mine.status];
+      return '<div class="review-cta review-cta--status"><p>نظر شما با عنوان «' + esc(mine.title) + '» ثبت شده است — وضعیت: <strong>' + label + '</strong>' +
+        (mine.rejection_reason ? '<br>دلیل: ' + esc(mine.rejection_reason) : '') + '</p></div>';
+    }
+    return '<form class="review-form card-surface" id="review-form" novalidate enctype="multipart/form-data">' +
+      '<h3>نظر خود را درباره این کالا بنویسید</h3>' +
+      '<div class="field"><span class="field__label">امتیاز شما</span>' + starsInput() + '<p class="field__error" data-error-for="rating"></p></div>' +
+      '<div class="field"><label for="rv-title">عنوان نظر</label><input class="input" id="rv-title" name="title" maxlength="120"><p class="field__error" data-error-for="title"></p></div>' +
+      '<div class="field"><label for="rv-body">متن نظر</label><textarea class="textarea" id="rv-body" name="body" rows="4" maxlength="2000"></textarea><p class="field__hint">حداقل ۱۰ و حداکثر ۲۰۰۰ کاراکتر</p><p class="field__error" data-error-for="body"></p></div>' +
+      '<div class="field"><label for="rv-images">تصاویر (اختیاری، حداکثر ۳ تصویر JPG/PNG/WebP تا ۲ مگابایت)</label><input id="rv-images" name="images[]" type="file" accept="image/jpeg,image/png,image/webp" multiple><p class="field__error" data-error-for="images"></p></div>' +
+      '<p class="field__hint">نظر شما پس از بررسی منتشر می‌شود. نشان «خریدار تأییدشده» فقط برای سفارش‌های تحویل‌شده نمایش داده می‌شود.</p>' +
+      '<button type="submit" class="btn btn--primary">ثبت نظر</button></form>';
+  }
+
+  function summaryHTML(s) {
+    var rows = [5, 4, 3, 2, 1].map(function (n) {
+      var c = s.distribution[n] || 0;
+      var pct = s.count ? Math.round(c / s.count * 100) : 0;
+      return '<button type="button" class="dist-row" data-rating="' + n + '" aria-pressed="' + (String(rq.rating) === String(n)) + '"><span>' + u.faDigits(n) + ' ستاره</span>' +
+        '<span class="dist-row__bar"><span style="width:' + pct + '%"></span></span><span>' + u.num(c) + '</span></button>';
+    }).join('');
+    return '<div class="review-summary card-surface"><div class="review-summary__avg"><strong>' + (s.count ? u.faDigits(s.average.toFixed(1)) : '—') + '</strong>' +
+      (s.count ? u.stars(s.average) : '') + '<span>از ' + u.num(s.count) + ' نظر تأییدشده</span></div><div class="review-summary__dist">' + rows + '</div></div>';
+  }
+
+  function itemHTML(r) {
+    return '<article class="review-item"><div class="review-item__head"><div><strong>' + esc(r.title) + '</strong> ' + u.stars(r.rating) + '</div>' +
+      '<span>' + esc(r.author) + ' · ' + esc(r.created_at_fa) + (r.verified_buyer ? ' · <span class="badge badge--green">' + u.icon('check', 'icon--sm') + 'خریدار تأییدشده</span>' : '') + '</span></div>' +
+      '<p>' + esc(r.body).replace(/\n/g, '<br>') + '</p>' +
+      (r.images.length ? '<div class="review-item__images">' + r.images.map(function (p) { return '<a href="' + esc(p) + '" target="_blank" rel="noopener"><img src="' + esc(p) + '" alt="تصویر ارسالی کاربر" width="80" height="80" loading="lazy"></a>'; }).join('') + '</div>' : '') +
+      (r.reply ? '<div class="review-item__reply"><strong>پاسخ فروشگاه</strong><p>' + esc(r.reply.body) + '</p></div>' : '') + '</article>';
+  }
+
+  function loadReviews() {
+    box.setAttribute('aria-busy', 'true');
+    AP.api.get('products/' + box.dataset.product + '/reviews', rq).then(function (d) {
+      var p = d.pagination;
+      var pager = '';
+      if (p.pages > 1) {
+        for (var i = 1; i <= p.pages; i++) pager += '<button type="button" class="pager__num" data-rpage="' + i + '"' + (i === p.page ? ' aria-current="page"' : '') + '>' + u.faDigits(i) + '</button>';
+        pager = '<nav class="pager" aria-label="صفحه‌بندی نظرات">' + pager + '</nav>';
+      }
+      box.innerHTML = summaryHTML(d.summary) +
+        '<div class="review-tools"><label for="rv-sort">مرتب‌سازی:</label><select class="select select--inline" id="rv-sort">' +
+        [['newest', 'جدیدترین'], ['oldest', 'قدیمی‌ترین'], ['highest', 'بیشترین امتیاز'], ['lowest', 'کمترین امتیاز']].map(function (o) {
+          return '<option value="' + o[0] + '"' + (rq.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+        }).join('') + '</select>' + (rq.rating ? '<button type="button" class="chip" data-rating="">حذف فیلتر امتیاز ' + u.icon('close') + '</button>' : '') + '</div>' +
+        '<div class="review-list">' + (d.items.length ? d.items.map(itemHTML).join('') : '<p class="field__hint">' + (rq.rating ? 'نظری با این امتیاز وجود ندارد.' : 'هنوز نظری برای این کالا منتشر نشده است. اولین نفر باشید!') + '</p>') + '</div>' +
+        pager + formHTML(d.mine);
+      box.removeAttribute('aria-busy');
+    }).catch(function (err) { box.innerHTML = '<p class="form-error">' + esc(err.message) + '</p>'; });
+  }
+
+  if (box) {
+    box.addEventListener('change', function (e) {
+      if (e.target.id === 'rv-sort') { rq.sort = e.target.value; rq.page = 1; loadReviews(); }
+    });
+    box.addEventListener('click', function (e) {
+      var r = e.target.closest('[data-rating]');
+      if (r) { rq.rating = r.dataset.rating; rq.page = 1; loadReviews(); return; }
+      var pg = e.target.closest('[data-rpage]');
+      if (pg) { rq.page = Number(pg.dataset.rpage); loadReviews(); }
+    });
+    box.addEventListener('submit', function (e) {
+      if (e.target.id !== 'review-form') return;
+      e.preventDefault();
+      var form = e.target;
+      var files = form.elements['images[]'].files;
+      var local = {};
+      if (!form.querySelector('input[name="rating"]:checked')) local.rating = 'امتیاز را انتخاب کنید.';
+      if (form.elements.title.value.trim().length < 3) local.title = 'عنوان باید حداقل ۳ کاراکتر باشد.';
+      if (form.elements.body.value.trim().length < 10) local.body = 'متن نظر باید حداقل ۱۰ کاراکتر باشد.';
+      if (files.length > 3) local.images = 'حداکثر ۳ تصویر مجاز است.';
+      Array.prototype.forEach.call(files, function (f) {
+        if (f.size > 2 * 1024 * 1024) local.images = 'حجم هر تصویر باید کمتر از ۲ مگابایت باشد.';
+        if (['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) === -1) local.images = 'فقط تصاویر JPG، PNG و WebP مجاز است.';
+      });
+      if (Object.keys(local).length) { AP.api.showErrors(form, { errors: local }); return; }
+      var btn = form.querySelector('[type="submit"]');
+      btn.disabled = true;
+      AP.api.post('products/' + box.dataset.product + '/reviews', new FormData(form)).then(function () {
+        AP.toast('نظر شما ثبت شد و پس از بررسی منتشر می‌شود.');
+        loadReviews();
+      }).catch(function (err) {
+        btn.disabled = false;
+        AP.api.showErrors(form, err);
+        AP.toast(err.message, 'error');
+      });
+    });
+  }
+
+  /* ---------------- Questions ---------------- */
+  var qbox = document.getElementById('questions');
+  function loadQuestions() {
+    AP.api.get('products/' + qbox.dataset.product + '/questions').then(function (list) {
+      qbox.innerHTML = (list.length ? '<div class="faq">' + list.map(function (q) {
+        return '<details><summary>' + esc(q.question) + '</summary><p>' + (q.answer ? esc(q.answer) : 'به‌زودی پاسخ داده می‌شود.') + '</p></details>';
+      }).join('') + '</div>' : '<p class="field__hint">هنوز پرسشی ثبت نشده است.</p>') +
+        (AP.boot.user ? '<form class="review-form card-surface" id="question-form" novalidate><h3>پرسش خود را بپرسید</h3>' +
+          '<div class="field"><label for="q-text">پرسش</label><textarea class="textarea" id="q-text" name="question" rows="3" maxlength="1000"></textarea><p class="field__error" data-error-for="question"></p></div>' +
+          '<button type="submit" class="btn btn--primary btn--sm">ارسال پرسش</button></form>'
+          : '<p class="field__hint"><a href="login?next=' + encodeURIComponent(location.pathname) + '">وارد شوید</a> تا پرسش خود را ثبت کنید.</p>');
+    });
+  }
+  if (qbox) {
+    qbox.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var form = e.target;
+      AP.api.post('products/' + qbox.dataset.product + '/questions', { question: form.elements.question.value }).then(function () {
+        AP.toast('پرسش شما ثبت شد.');
+        form.reset();
+      }).catch(function (err) { AP.api.showErrors(form, err); });
+    });
+  }
 })();

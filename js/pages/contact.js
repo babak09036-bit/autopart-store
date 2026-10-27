@@ -1,4 +1,4 @@
-/* Contact form validation (no network request; shows a local success message). */
+/* Contact form → POST /api/contact (stored in contact_messages, visible in the admin panel). */
 (function () {
   'use strict';
 
@@ -6,34 +6,34 @@
   var u = AP.utils;
   var form = document.getElementById('contact-form');
   var alertBox = document.getElementById('contact-alert');
+  if (!form) return;
 
-  function check(input, message) {
-    document.getElementById(input.id + '-error').textContent = message || '';
-    input.setAttribute('aria-invalid', message ? 'true' : 'false');
-    if (!input.getAttribute('aria-describedby')) input.setAttribute('aria-describedby', input.id + '-error');
-    return !message;
+  function say(text, ok) {
+    alertBox.className = 'alert ' + (ok ? 'alert--success' : 'alert--error');
+    alertBox.innerHTML = u.icon(ok ? 'check' : 'alert', 'icon--sm') + '<span>' + u.escape(text) + '</span>';
+    alertBox.hidden = false;
   }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var f = form.elements;
-    var contact = u.enDigits(f.contact.value.trim());
-    var ok = check(f.name, f.name.value.trim().length < 3 ? 'نام خود را وارد کنید.' : '');
-    ok = check(f.contact, !contact ? 'موبایل یا ایمیل را وارد کنید.'
-      : !(u.isMobile(contact) || u.isEmail(contact)) ? 'یک شماره موبایل (۰۹...) یا ایمیل معتبر وارد کنید.' : '') && ok;
-    ok = check(f.subject, !f.subject.value ? 'موضوع پیام را انتخاب کنید.' : '') && ok;
-    ok = check(f.message, f.message.value.trim().length < 10 ? 'متن پیام باید حداقل ۱۰ کاراکتر باشد.' : '') && ok;
-
-    alertBox.hidden = false;
-    if (!ok) {
-      alertBox.className = 'alert alert--error';
-      alertBox.innerHTML = u.icon('alert', 'icon--sm') + '<span>لطفاً خطاهای فرم را برطرف کنید.</span>';
-      form.querySelector('[aria-invalid="true"]').focus();
-      return;
-    }
-    alertBox.className = 'alert alert--success';
-    alertBox.innerHTML = u.icon('check', 'icon--sm') + '<span>پیام شما ثبت شد. کارشناسان ما حداکثر تا یک روز کاری پاسخ می‌دهند. (نمایشی)</span>';
-    form.reset();
-    u.$$('[aria-invalid]', form).forEach(function (el) { el.removeAttribute('aria-invalid'); });
+    var data = { name: f.name.value.trim(), contact: u.enDigits(f.contact.value.trim()), subject: f.subject.value, message: f.message.value.trim(), website: f.website.value };
+    var local = {};
+    if (data.name.length < 3) local.name = 'نام خود را وارد کنید.';
+    if (!u.isMobile(data.contact) && !u.isEmail(data.contact)) local.contact = 'یک شماره موبایل (۰۹...) یا ایمیل معتبر وارد کنید.';
+    if (!data.subject) local.subject = 'موضوع پیام را انتخاب کنید.';
+    if (data.message.length < 10) local.message = 'متن پیام باید حداقل ۱۰ کاراکتر باشد.';
+    if (Object.keys(local).length) { AP.api.showErrors(form, { errors: local }); say('لطفاً خطاهای فرم را برطرف کنید.', false); return; }
+    var btn = form.querySelector('[type="submit"]');
+    btn.disabled = true;
+    AP.api.post('contact', data).then(function () {
+      say('پیام شما ثبت شد. کارشناسان ما حداکثر تا یک روز کاری پاسخ می‌دهند.', true);
+      form.reset();
+      btn.disabled = false;
+    }).catch(function (err) {
+      btn.disabled = false;
+      AP.api.showErrors(form, err);
+      say(err.message, false);
+    });
   });
 })();

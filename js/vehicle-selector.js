@@ -1,4 +1,4 @@
-/* Dependent vehicle selects: brand -> model -> production year. */
+/* Dependent vehicle selects: brand → model → production year. Data comes from the API (vehicle_brands / vehicle_models). */
 (function () {
   'use strict';
 
@@ -7,67 +7,51 @@
 
   function fill(select, placeholder, items) {
     select.innerHTML = '<option value="">' + placeholder + '</option>' + items.map(function (it) {
-      return '<option value="' + it.value + '">' + u.escape(it.label) + '</option>';
+      return '<option value="' + u.escape(it.value) + '">' + u.escape(it.label) + '</option>';
     }).join('');
     select.disabled = items.length === 0;
   }
 
-  /**
-   * form must contain selects named brand, model and year.
-   * onSubmit receives { brand, model, year } once all three are valid.
-   */
-  AP.VehicleSelector = function (form, onSubmit) {
+  /** form needs selects named brand, model, year. onSubmit({brand, model, modelName, year}). */
+  AP.VehicleSelector = function (form, vehicles, onSubmit) {
     var brand = form.elements.brand, model = form.elements.model, year = form.elements.year;
     var error = form.querySelector('.form-error');
+    var current = null;
 
-    fill(brand, 'برند خودرو را انتخاب کنید', AP.data.vehicles.map(function (b) { return { value: b.slug, label: b.name }; }));
+    fill(brand, 'برند خودرو را انتخاب کنید', vehicles.map(function (b) { return { value: b.slug, label: b.name }; }));
     fill(model, 'ابتدا برند را انتخاب کنید', []);
     fill(year, 'ابتدا مدل را انتخاب کنید', []);
 
-    function selectedModel() {
-      var found = AP.catalog.model(model.value);
-      return found && found.brand.slug === brand.value ? found.model : null;
-    }
+    function brandData() { return vehicles.filter(function (b) { return b.slug === brand.value; })[0]; }
 
     brand.addEventListener('change', function () {
-      var b = AP.data.vehicles.filter(function (x) { return x.slug === brand.value; })[0];
+      var b = brandData();
       fill(model, 'مدل خودرو', b ? b.models.map(function (m) { return { value: m.slug, label: m.name }; }) : []);
       fill(year, 'ابتدا مدل را انتخاب کنید', []);
+      current = null;
       if (error) error.textContent = '';
     });
 
     model.addEventListener('change', function () {
-      var m = selectedModel();
+      var b = brandData();
+      current = b ? b.models.filter(function (m) { return m.slug === model.value; })[0] : null;
       var years = [];
-      if (m) for (var y = m.years[1]; y >= m.years[0]; y--) years.push({ value: y, label: u.faDigits(y) });
+      if (current) for (var y = current.years[1]; y >= current.years[0]; y--) years.push({ value: y, label: u.faDigits(y) });
       fill(year, 'سال تولید', years);
       if (error) error.textContent = '';
     });
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var m = selectedModel();
       var y = Number(year.value);
-      var msg = !brand.value ? 'لطفاً برند خودرو را انتخاب کنید.'
-        : !m ? 'لطفاً مدل خودرو را انتخاب کنید.'
-          : !y || y < m.years[0] || y > m.years[1] ? 'لطفاً سال تولید را انتخاب کنید.' : '';
+      var msg = !brand.value ? 'لطفاً برند خودرو را انتخاب کنید.' : !current ? 'لطفاً مدل خودرو را انتخاب کنید.'
+        : !y || y < current.years[0] || y > current.years[1] ? 'لطفاً سال تولید را انتخاب کنید.' : '';
       if (error) error.textContent = msg;
       if (msg) {
-        (!brand.value ? brand : !m ? model : year).focus();
+        (!brand.value ? brand : !current ? model : year).focus();
         return;
       }
-      onSubmit({ brand: brand.value, model: m.slug, modelName: m.name, year: y });
+      onSubmit({ brand: brand.value, model: current.slug, modelName: current.name, year: y });
     });
-
-    return {
-      set: function (modelSlug) {
-        var found = AP.catalog.model(modelSlug);
-        if (!found) return;
-        brand.value = found.brand.slug;
-        brand.dispatchEvent(new Event('change'));
-        model.value = found.model.slug;
-        model.dispatchEvent(new Event('change'));
-      }
-    };
   };
 })();

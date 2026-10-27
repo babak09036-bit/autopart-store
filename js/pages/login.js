@@ -1,52 +1,44 @@
-/* Demo login / register. Only the display name and mobile are stored; passwords never are. */
+/* Login, register, forgot-password and reset-password forms (POST /api/auth/*). */
 (function () {
   'use strict';
 
   var AP = window.AP;
   var u = AP.utils;
-  var main = document.getElementById('auth-main');
   var alertBox = document.getElementById('auth-alert');
 
   function showAlert(text, ok) {
+    if (!alertBox) return;
     alertBox.className = 'alert ' + (ok ? 'alert--success' : 'alert--error');
     alertBox.innerHTML = u.icon(ok ? 'check' : 'alert', 'icon--sm') + '<span>' + u.escape(text) + '</span>';
     alertBox.hidden = false;
   }
 
-  function setError(input, message) {
-    var el = document.getElementById(input.id + '-error') || document.getElementById(input.getAttribute('aria-describedby'));
-    if (el) el.textContent = message || '';
-    input.setAttribute('aria-invalid', message ? 'true' : 'false');
-    return !message;
+  /** Only same-site paths are accepted (no open redirects to other hosts). */
+  function nextUrl() {
+    var next = u.params().get('next') || 'account';
+    if (/^\/(?![\/\\])[\w\-\/.%]*$/.test(next) || /^[\w\-][\w\-\/]*$/.test(next)) return next;
+    return 'account';
   }
 
-  function maskMobile(m) { return u.faDigits(m.slice(0, 4) + '***' + m.slice(-4)); }
-
-  function renderUser(user) {
-    main.innerHTML = '<div class="auth__user">' +
-      '<img src="assets/images/ui/avatar-3.svg" alt="" width="96" height="96">' +
-      '<h2>' + u.escape(user.name) + '</h2><p class="field__hint">' + maskMobile(user.mobile) + '</p>' +
-      '<a class="btn btn--primary btn--block" href="tracking.html">' + u.icon('package-track', 'icon--sm') + 'پیگیری سفارش‌ها</a>' +
-      '<a class="btn btn--light btn--block" href="favorites.html">' + u.icon('heart', 'icon--sm') + 'علاقه‌مندی‌ها</a>' +
-      '<button type="button" class="btn btn--ghost btn--block" data-logout>' + u.icon('logout', 'icon--sm') + 'خروج از حساب</button></div>';
+  /** After login, guest favourites saved in the browser are merged into the account. */
+  function afterLogin(message) {
+    showAlert(message, true);
+    var local = AP.favs.localIds();
+    var sync = local.length ? AP.api.post('wishlist/sync', { ids: local }).then(function () { AP.favs.clearLocal(); }).catch(function () {}) : Promise.resolve();
+    sync.then(function () { location.href = nextUrl(); });
   }
 
-  var stored = u.store.get('ap_user', null);
-  if (stored && stored.name && stored.mobile) {
-    renderUser(stored);
+  function submit(form, path, data, onOk) {
+    var btn = form.querySelector('[type="submit"]');
+    btn.disabled = true;
+    AP.api.post(path, data).then(function (res) { onOk(res); }).catch(function (err) {
+      btn.disabled = false;
+      AP.api.showErrors(form, err);
+      showAlert(err.message, false);
+    });
   }
 
-  main.addEventListener('click', function (e) {
-    if (e.target.closest('[data-logout]')) {
-      u.store.remove('ap_user');
-      location.reload();
-    }
-  });
-
-  if (!document.getElementById('login-form')) return;
-
-  /* Tabs */
-  var tabs = u.$$('[role="tab"]', main);
+  var tabs = u.$$('.auth__tabs [role="tab"]');
   function selectTab(tab) {
     tabs.forEach(function (t) {
       var on = t === tab;
@@ -54,7 +46,7 @@
       t.tabIndex = on ? 0 : -1;
       document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
     });
-    alertBox.hidden = true;
+    if (alertBox) alertBox.hidden = true;
   }
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { selectTab(t); });
@@ -66,7 +58,6 @@
     });
   });
 
-  /* Show / hide password */
   u.$$('[data-toggle-password]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var input = btn.parentNode.querySelector('input');
@@ -77,47 +68,54 @@
     });
   });
 
-  function finish(user, message) {
-    u.store.set('ap_user', user);
-    var label = u.$('.header-action--account span');
-    if (label) label.textContent = user.name;
-    showAlert(message, true);
-    AP.toast(message);
-    setTimeout(function () { renderUser(user); }, 900);
-  }
-
-  document.getElementById('login-form').addEventListener('submit', function (e) {
+  var login = document.getElementById('login-form');
+  if (login) login.addEventListener('submit', function (e) {
     e.preventDefault();
-    var f = e.target.elements;
-    var mobile = u.enDigits(f.mobile.value.trim());
-    var ok = setError(f.mobile, !mobile ? 'شماره موبایل را وارد کنید.' : !u.isMobile(mobile) ? 'شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود.' : '');
-    ok = setError(f.password, !f.password.value ? 'رمز عبور را وارد کنید.' : f.password.value.length < 8 ? 'رمز عبور حداقل ۸ کاراکتر است.' : '') && ok;
-    if (!ok) {
-      showAlert('لطفاً خطاهای فرم را برطرف کنید.', false);
-      e.target.querySelector('[aria-invalid="true"]').focus();
-      return;
-    }
-    finish({ name: 'کاربر ' + u.faDigits(mobile.slice(-4)), mobile: mobile }, 'با موفقیت وارد شدید.');
+    var f = login.elements;
+    var local = {};
+    if (!f.mobile.value.trim()) local.mobile = 'شماره موبایل یا ایمیل را وارد کنید.';
+    if (!f.password.value) local.password = 'رمز عبور را وارد کنید.';
+    if (Object.keys(local).length) { AP.api.showErrors(login, { errors: local }); return; }
+    submit(login, 'auth/login', { mobile: u.enDigits(f.mobile.value.trim()), password: f.password.value }, function () { afterLogin('با موفقیت وارد شدید.'); });
   });
 
-  document.getElementById('register-form').addEventListener('submit', function (e) {
+  var register = document.getElementById('register-form');
+  if (register) register.addEventListener('submit', function (e) {
     e.preventDefault();
-    var f = e.target.elements;
-    var name = f.name.value.trim();
-    var mobile = u.enDigits(f.mobile.value.trim());
-    var ok = setError(f.name, name.length < 3 ? 'نام و نام خانوادگی را کامل وارد کنید.' : '');
-    ok = setError(f.mobile, !u.isMobile(mobile) ? 'شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود.' : '') && ok;
-    ok = setError(f.password, f.password.value.length < 8 ? 'رمز عبور باید حداقل ۸ کاراکتر باشد.' : '') && ok;
-    ok = setError(f.confirm, f.confirm.value !== f.password.value || !f.confirm.value ? 'تکرار رمز عبور با رمز عبور یکسان نیست.' : '') && ok;
-    var termsError = document.getElementById('reg-terms-error');
-    termsError.textContent = f.terms.checked ? '' : 'برای ثبت‌نام باید قوانین را بپذیرید.';
-    ok = f.terms.checked && ok;
-    if (!ok) {
-      showAlert('لطفاً خطاهای فرم را برطرف کنید.', false);
-      var first = e.target.querySelector('[aria-invalid="true"]') || f.terms;
-      first.focus();
-      return;
-    }
-    finish({ name: name, mobile: mobile }, 'حساب کاربری شما ساخته شد.');
+    var f = register.elements;
+    var local = {};
+    if (f.full_name.value.trim().length < 3) local.full_name = 'نام و نام خانوادگی را کامل وارد کنید.';
+    if (!u.isMobile(f.mobile.value)) local.mobile = 'شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود.';
+    if (f.email.value.trim() && !u.isEmail(f.email.value)) local.email = 'ایمیل معتبر نیست.';
+    if (f.password.value.length < 8) local.password = 'رمز عبور باید حداقل ۸ کاراکتر باشد.';
+    if (f.password_confirmation.value !== f.password.value) local.password_confirmation = 'تکرار رمز عبور با رمز عبور یکسان نیست.';
+    if (!f.terms.checked) local.terms = 'برای ثبت‌نام باید قوانین را بپذیرید.';
+    if (Object.keys(local).length) { AP.api.showErrors(register, { errors: local }); showAlert('لطفاً خطاهای فرم را برطرف کنید.', false); return; }
+    submit(register, 'auth/register', {
+      full_name: f.full_name.value.trim(), mobile: u.enDigits(f.mobile.value.trim()), email: f.email.value.trim(),
+      password: f.password.value, password_confirmation: f.password_confirmation.value, terms: f.terms.checked
+    }, function () { afterLogin('حساب کاربری شما ساخته شد.'); });
+  });
+
+  var forgot = document.getElementById('forgot-form');
+  if (forgot) forgot.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!u.isEmail(forgot.elements.email.value)) { AP.api.showErrors(forgot, { errors: { email: 'ایمیل معتبر نیست.' } }); return; }
+    submit(forgot, 'auth/forgot-password', { email: forgot.elements.email.value.trim() }, function () {
+      showAlert('اگر حسابی با این ایمیل وجود داشته باشد، پیوند بازیابی برای آن ارسال می‌شود.', true);
+      forgot.reset();
+      forgot.querySelector('[type="submit"]').disabled = false;
+    });
+  });
+
+  var reset = document.getElementById('reset-form');
+  if (reset) reset.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = reset.elements;
+    if (!f.token.value) { showAlert('پیوند بازیابی نامعتبر است.', false); return; }
+    submit(reset, 'auth/reset-password', { token: f.token.value, password: f.password.value, password_confirmation: f.password_confirmation.value }, function () {
+      showAlert('رمز عبور شما تغییر کرد؛ اکنون می‌توانید وارد شوید.', true);
+      setTimeout(function () { location.href = 'login'; }, 1500);
+    });
   });
 })();

@@ -1,0 +1,49 @@
+# AutoPart — Apache configuration (requires mod_rewrite)
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+AddDefaultCharset UTF-8
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Never serve application code, configuration, data or tooling over HTTP.
+  RewriteRule ^(app|config|routes|storage|database|bin|tests|vendor)(/|$) - [F,L]
+  # Hidden files (.env, .git, .htaccess ...)
+  RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+  # REST API
+  RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
+
+  # Admin panel (static assets are served directly)
+  RewriteRule ^admin/assets/ - [L]
+  RewriteRule ^admin(/.*)?$ admin/index.php [QSA,L]
+
+  # Old static page names are redirected (301) to clean URLs by the front controller.
+  RewriteRule ^[a-z-]+\.html$ index.php [QSA,L]
+
+  # Everything that is not a real file goes to the storefront front controller.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Defence in depth for sensitive files even if rewrites are disabled.
+<FilesMatch "(^\.|\.(env|sql|log|md|lock|ini|sh|bak)$|^composer\.json$)">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/svg+xml "access plus 7 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType font/ttf "access plus 1 year"
+  ExpiresByType text/css "access plus 1 day"
+  ExpiresByType application/javascript "access plus 1 day"
+</IfModule>

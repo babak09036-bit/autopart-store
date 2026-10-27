@@ -1,0 +1,11 @@
+.env
+/storage/logs/*
+/storage/cache/*
+/storage/private/*
+!/storage/**/.gitignore
+!/storage/**/.htaccess
+/uploads/**/*
+!/uploads/.htaccess
+!/uploads/*/
+!/uploads/*/.gitkeep
+/vendor/
