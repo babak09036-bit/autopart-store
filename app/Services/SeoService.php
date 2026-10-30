@@ -28,7 +28,7 @@ final class SeoService
     public static function meta(array $d, ?string $entityType = null, ?int $entityId = null, ?string $routeKey = null): array
     {
         $settings = SettingsService::all();
-        $store = (string) ($settings['store_name'] ?? 'اتوپارت');
+        $store = (string) ($settings['store_name'] ?? 'لوکس جوکر');
         $suffix = (string) ($settings['seo_title_suffix'] ?? (' | ' . $store));
         $rec = ($entityType || $routeKey) ? self::record((string) $entityType, $entityId, $routeKey) : null;
 

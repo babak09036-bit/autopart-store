@@ -97,7 +97,7 @@ final class AuthController extends Controller
                 'token_hash' => hash('sha256', $token),
                 'expires_at' => gmdate('Y-m-d H:i:s', time() + $minutes * 60),
             ]);
-            LogMailer::make()->send($user['email'], 'بازیابی رمز عبور اتوپارت',
+            LogMailer::make()->send($user['email'], 'بازیابی رمز عبور لوکس جوکر',
                 "سلام {$user['full_name']}\nبرای تعیین رمز عبور جدید روی پیوند زیر بزنید (تا {$minutes} دقیقه معتبر است):\n" . absolute_url('reset-password?token=' . $token));
         }
         return $this->ok(null, 'اگر حسابی با این ایمیل وجود داشته باشد، پیوند بازیابی برای آن ارسال می‌شود.');
