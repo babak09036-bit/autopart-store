@@ -6,6 +6,13 @@ AddDefaultCharset UTF-8
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Always HTTPS on a real domain (login cookies are HTTPS-only); local development hosts stay on http.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$ [NC]
+  RewriteCond %{HTTP_HOST} !\.(localhost|test)(:\d+)?$ [NC]
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
   # Never serve application code, configuration, data or tooling over HTTP.
   RewriteRule ^(app|config|routes|storage|database|bin|tests|vendor|deploy)(/|$) - [F,L]
   # Hidden files (.env, .git, .htaccess ...)
