@@ -1,0 +1,9 @@
+---
+# cPanel Git™ Version Control: "Deploy HEAD Commit" copies the site into public_html.
+# Only application files are copied; .env, logs and uploaded images on the server are never overwritten or removed.
+deployment:
+  tasks:
+    - export DEPLOYPATH=$HOME/public_html/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R admin api app assets bin config css database js routes storage uploads $DEPLOYPATH
+    - /bin/cp index.php setup.php .htaccess .env.example $DEPLOYPATH
