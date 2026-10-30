@@ -258,6 +258,8 @@
       '<input class="a-input" data-vsku dir="ltr" value="' + esc(v.sku || '') + '" placeholder="SKU" aria-label="SKU تنوع">' +
       '<input class="a-input" data-vprice type="number" value="' + esc(v.price || '') + '" placeholder="قیمت (خالی = قیمت محصول)" aria-label="قیمت تنوع">' +
       '<input class="a-input" data-vstock type="number" min="0" value="' + esc(v.stock === undefined ? 0 : v.stock) + '" placeholder="موجودی" aria-label="موجودی تنوع">' +
+      '<span class="a-vcolor"><label class="a-check"><input type="checkbox" data-vhascolor' + (v.color_hex ? ' checked' : '') + '><span>رنگ</span></label>' +
+        '<input type="color" data-vcolor value="' + esc(v.color_hex || '#1a1a1a') + '" aria-label="رنگ تنوع"' + (v.color_hex ? '' : ' disabled') + '></span>' +
       '<label class="a-check"><input type="checkbox" data-vactive' + (v.is_active === undefined || Number(v.is_active) ? ' checked' : '') + '><span>فعال</span></label></div>' + TOOLS + '</div>';
   }
 
@@ -297,7 +299,7 @@
         { name: 'category_ids', label: 'دسته‌بندی‌ها', type: 'multi', endpoint: 'api/admin/r/categories', full: true },
         { name: 'primary_category_id', label: 'دسته اصلی (برای مسیر راهنما)', type: 'select', empty: '— انتخاب —', options: idOptions(cats) },
         { name: 'short_description', label: 'توضیح کوتاه', type: 'textarea', rows: 3, full: true, maxlength: 500 },
-        { name: 'description', label: 'توضیحات کامل', type: 'html', full: true }
+        { name: 'description', label: 'توضیحات کامل', type: 'html', folder: 'products', full: true }
       ].concat(FLAGS.map(function (f) { return { name: f[0], label: 'نشان «' + f[1] + '»', type: 'checkbox' }; }));
       var pricing = [
         { name: 'price', label: 'قیمت (تومان)', type: 'number', required: true, step: 1 },
@@ -342,6 +344,9 @@
       });
       form.addEventListener('input', function (e) { if (e.target.matches('[data-path]')) e.target.closest('.a-row').querySelector('img').src = e.target.value || 'assets/images/ui/placeholder.svg'; });
       $('[data-add-variant]', form).addEventListener('click', function () { $('[data-variants]', form).insertAdjacentHTML('beforeend', variantRow({})); });
+      form.addEventListener('change', function (e) {
+        if (e.target.matches('[data-vhascolor]')) $('[data-vcolor]', e.target.closest('.a-row')).disabled = !e.target.checked;
+      });
       $('[data-add-fitment]', form).addEventListener('click', function () { $('[data-fitments]', form).insertAdjacentHTML('beforeend', fitmentRow(models, {})); });
       if (id && seo) bindSerp(form, function () { return { title: $('[name="name"]', form).value, description: $('[name="short_description"]', form).value || seo.defaults.description, url: seo.defaults.url }; });
 
@@ -352,7 +357,8 @@
         data.images = $$('[data-img-row]', form).map(function (row) { return { path: $('[data-path]', row).value.trim(), alt: $('[data-alt]', row).value.trim() }; }).filter(function (x) { return x.path; });
         data.variants = $$('[data-variant-row]', form).map(function (row) {
           return { id: $('[data-vid]', row).value, name: $('[data-vname]', row).value.trim(), sku: $('[data-vsku]', row).value.trim(), price: A.en($('[data-vprice]', row).value),
-            stock: Number(A.en($('[data-vstock]', row).value) || 0), is_active: $('[data-vactive]', row).checked };
+            stock: Number(A.en($('[data-vstock]', row).value) || 0), is_active: $('[data-vactive]', row).checked,
+            color_hex: $('[data-vhascolor]', row).checked ? $('[data-vcolor]', row).value : '' };
         }).filter(function (x) { return x.name || x.sku; });
         data.vehicles = $$('[data-fit-row]', form).map(function (row) {
           return { vehicle_model_id: $('[data-fmodel]', row).value, year_from: A.en($('[data-ffrom]', row).value), year_to: A.en($('[data-fto]', row).value), note: $('[data-fnote]', row).value.trim() };
@@ -375,6 +381,235 @@
         });
       });
     }).catch(failView(title));
+  });
+
+  /* ---------------- Inventory ---------------- */
+  var REASONS = { initial: 'موجودی اولیه', manual: 'ویرایش دستی', order: 'فروش (سفارش)', order_cancel: 'لغو سفارش', return: 'مرجوعی', adjustment: 'اصلاح موجودی' };
+  function stockBadge(x) {
+    var q = Number(x.quantity);
+    return !q ? A.badge('ناموجود', 'red') : q <= Number(x.low_stock_threshold) ? A.badge('کم‌موجود', 'orange') : A.badge('کافی', 'green');
+  }
+
+  page('#/inventory', 'inventory.manage|products.view', function () {
+    A.loading('انبار و موجودی');
+    Promise.all([all('r/categories'), all('r/brands'), all('r/vehicle-models')]).then(function (r) {
+      var manage = A.can('inventory.manage');
+      var selected = {};
+      var columns = [
+        { label: 'کالا', sort: 'name', render: function (x) {
+          return '<div class="a-cell-main"><img class="a-thumb" src="' + esc(x.image || 'assets/images/ui/placeholder.svg') + '" alt="" width="44" height="44" loading="lazy"><div><strong><a href="admin#/products/' + x.product_id + '">' + esc(x.name) + '</a></strong>' +
+            (x.variant_name ? A.badge(x.variant_name, 'blue') + ' ' : '') + '<small>' + esc([x.category_name, x.brand_name].filter(Boolean).join(' · ')) + '</small></div></div>';
+        } },
+        { label: 'SKU', render: function (x) { return ltr(x.variant_sku || x.sku); } },
+        { label: 'موجودی', sort: 'quantity', render: function (x) {
+          return manage ? '<input class="a-input a-qty" type="number" min="0" step="1" data-qty value="' + Number(x.quantity) + '" aria-label="موجودی ' + esc(x.name) + '">' : A.num(x.quantity);
+        } },
+        { label: 'حد هشدار', render: function (x) {
+          return manage ? '<input class="a-input a-qty" type="number" min="0" step="1" data-th value="' + Number(x.low_stock_threshold) + '" aria-label="حد هشدار کم‌موجودی">' : A.num(x.low_stock_threshold);
+        } },
+        { label: 'وضعیت', render: stockBadge },
+        { label: 'ارزش موجودی', render: function (x) { return A.money(Number(x.quantity) * Number(x.price)); } }
+      ];
+      if (manage) columns.unshift({ label: 'انتخاب', render: function (x) { return '<input type="checkbox" class="a-rowcheck" data-sel="' + x.id + '"' + (selected[x.id] ? ' checked' : '') + ' aria-label="انتخاب ' + esc(x.name) + '">'; } });
+      var list = A.list({
+        title: 'انبار و موجودی', endpoint: 'inventory',
+        filters: [{ name: 'stock', label: 'همه وضعیت‌ها', options: [['out', 'ناموجود'], ['low', 'کم‌موجود'], ['ok', 'موجودی کافی']] },
+          { name: 'category_id', label: 'همه دسته‌ها', options: idOptions(r[0]) }, { name: 'brand_id', label: 'همه برندها', options: idOptions(r[1]) },
+          { name: 'vehicle_model_id', label: 'همه خودروها', options: r[2].map(function (m) { return [String(m.id), m.brand_name + ' ' + m.name]; }) }],
+        toolbar: '<a class="a-btn a-btn--ghost a-btn--sm" href="admin#/inventory/movements">گردش انبار</a>' + btn('خروجی CSV', 'data-csv'),
+        columns: columns,
+        actions: function (x) { return (manage ? btn('ذخیره', 'data-save', 'a-btn--primary') : '') + '<a class="a-btn a-btn--ghost a-btn--sm" href="admin#/inventory/movements?product_id=' + x.product_id + '">گردش</a>'; },
+        onData: function (d, root) {
+          var s = d.summary;
+          root.querySelector('[data-inv-stats]').innerHTML = stat('کالاهای قابل فروش', A.num(s.items)) + stat('مجموع موجودی', A.num(s.units) + ' عدد') +
+            stat('ارزش موجودی (به قیمت فروش)', A.money(s.value)) + stat('ناموجود', A.num(s.out_count), '#/inventory?stock=out', s.out_count > 0) + stat('کم‌موجود', A.num(s.low_count), '#/inventory?stock=low', s.low_count > 0);
+          drawBulk();
+        },
+        onRow: function (e, row, reload) {
+          var tr = e.target.closest('tr');
+          var sel = e.target.closest('[data-sel]');
+          if (sel) { if (sel.checked) selected[row.id] = row.name + (row.variant_name ? ' — ' + row.variant_name : ''); else delete selected[row.id]; drawBulk(); }
+          if (e.target.closest('[data-save]')) saveRow(tr, row, reload);
+        }
+      });
+      var root = list.root;
+      root.insertAdjacentHTML('afterbegin', '<div class="a-stats" data-inv-stats></div>');
+      if (manage) {
+        A.$('.a-toolbar', root).insertAdjacentHTML('afterend', '<div class="a-bulkbar"><span data-bulk-count>هیچ کالایی انتخاب نشده</span>' + btn('انتخاب همه این صفحه', 'data-sel-page') + btn('لغو انتخاب', 'data-sel-clear') +
+          '<span class="a-toolbar__spacer"></span><select class="a-input" data-bulk-mode aria-label="نوع تغییر"><option value="add">افزودن به موجودی</option><option value="subtract">کسر از موجودی</option><option value="set">تنظیم موجودی روی</option><option value="threshold">تنظیم حد هشدار روی</option></select>' +
+          '<input class="a-input a-qty" type="number" min="0" step="1" data-bulk-value placeholder="تعداد" aria-label="تعداد"><input class="a-input" data-bulk-note placeholder="توضیح (مثلاً ورود بار)" aria-label="توضیح">' +
+          btn('اعمال روی انتخاب‌شده‌ها', 'data-bulk-apply', 'a-btn--primary') + '</div>');
+      }
+      function drawBulk() {
+        var n = Object.keys(selected).length;
+        var c = A.$('[data-bulk-count]', root);
+        if (c) c.textContent = n ? A.num(n) + ' کالا انتخاب شده' : 'هیچ کالایی انتخاب نشده';
+        var apply = A.$('[data-bulk-apply]', root);
+        if (apply) apply.disabled = !n;
+      }
+      function saveRow(tr, row, reload) {
+        var qty = A.en(A.$('[data-qty]', tr).value), th = A.en(A.$('[data-th]', tr).value);
+        if (qty === '' || Number(qty) < 0 || th === '' || Number(th) < 0) { A.toast('موجودی و حد هشدار باید عدد صفر یا بیشتر باشد.', 'error'); return; }
+        A.put('inventory/' + row.id, { quantity: Number(qty), low_stock_threshold: Number(th) }).then(function () { A.toast('موجودی «' + row.name + '» ذخیره شد.'); reload(); }).catch(A.fail);
+      }
+      // Enter in a quantity box saves that row.
+      root.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && e.target.matches('[data-qty], [data-th]')) { e.preventDefault(); e.target.closest('tr').querySelector('[data-save]').click(); }
+      });
+      root.addEventListener('click', function (e) {
+        if (e.target.closest('[data-sel-page]')) {
+          A.$$('[data-sel]', root).forEach(function (c) { c.checked = true; selected[c.dataset.sel] = c.closest('tr').querySelector('strong').textContent; });
+          drawBulk();
+        }
+        if (e.target.closest('[data-sel-clear]')) { selected = {}; A.$$('[data-sel]', root).forEach(function (c) { c.checked = false; }); drawBulk(); }
+        if (e.target.closest('[data-bulk-apply]')) {
+          var ids = Object.keys(selected).map(Number);
+          var mode = A.$('[data-bulk-mode]', root).value, value = A.en(A.$('[data-bulk-value]', root).value), note = A.$('[data-bulk-note]', root).value.trim();
+          if (value === '' || Number(value) < 0) { A.toast('تعداد را وارد کنید.', 'error'); return; }
+          var label = { add: 'به موجودی ' + A.num(ids.length) + ' کالا ' + A.num(value) + ' عدد اضافه شود', subtract: 'از موجودی ' + A.num(ids.length) + ' کالا ' + A.num(value) + ' عدد کم شود',
+            set: 'موجودی ' + A.num(ids.length) + ' کالا روی ' + A.num(value) + ' تنظیم شود', threshold: 'حد هشدار ' + A.num(ids.length) + ' کالا روی ' + A.num(value) + ' تنظیم شود' }[mode];
+          A.confirm(label + '؟', { danger: mode === 'subtract' || mode === 'set', yes: 'بله، اعمال شود' }).then(function (ok) {
+            if (!ok) return;
+            A.post('inventory/bulk', { ids: ids, mode: mode, value: Number(value), note: note }).then(function (res) {
+              A.toast('موجودی ' + A.num(res.count) + ' کالا به‌روزرسانی شد.');
+              selected = {};
+              list.reload();
+            }).catch(A.fail);
+          });
+        }
+        if (e.target.closest('[data-csv]')) {
+          var q = A.query(), rows = [];
+          (function next(pageNo) {
+            A.get('inventory', Object.assign({}, q, { per_page: 100, page: pageNo })).then(function (d) {
+              rows = rows.concat(d.items);
+              if (pageNo < d.pagination.pages) return next(pageNo + 1);
+              var cell = function (v) { return '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""').replace(/^[=+\-@]/, "'$&") + '"'; };
+              var csv = '﻿' + ['product', 'variant', 'sku', 'quantity', 'low_stock_threshold', 'price', 'category', 'brand'].join(',') + '\n' + rows.map(function (x) {
+                return [x.name, x.variant_name, x.variant_sku || x.sku, x.quantity, x.low_stock_threshold, x.price, x.category_name, x.brand_name].map(cell).join(',');
+              }).join('\n');
+              var a = document.createElement('a');
+              a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+              a.download = 'inventory.csv';
+              document.body.appendChild(a); a.click(); a.remove();
+              A.toast(A.num(rows.length) + ' ردیف خروجی گرفته شد.');
+            }).catch(A.fail);
+          })(1);
+        }
+      });
+    }).catch(failView('انبار و موجودی'));
+  });
+
+  page('#/inventory/movements', 'inventory.manage|products.view', function () {
+    A.list({
+      title: 'گردش انبار', endpoint: 'inventory/movements',
+      filters: [{ name: 'reason', label: 'همه علت‌ها', options: opts(REASONS) }],
+      toolbar: '<a class="a-btn a-btn--ghost a-btn--sm" href="admin#/inventory">بازگشت به انبار</a>',
+      columns: [{ label: 'زمان', render: function (x) { return esc(x.at); } },
+        { label: 'کالا', render: function (x) { return '<a href="admin#/products/' + x.product_id + '">' + esc(x.name) + '</a>' + (x.variant_name ? ' ' + A.badge(x.variant_name, 'blue') : ''); } },
+        { label: 'تغییر', render: function (x) { var c = Number(x.change_qty); return '<strong class="a-ltr" style="color:' + (c < 0 ? 'var(--danger)' : 'var(--success)') + '">' + A.fa((c > 0 ? '+' : '') + c) + '</strong>'; } },
+        { label: 'موجودی بعد', render: function (x) { return A.num(x.quantity_after); } },
+        { label: 'علت', render: function (x) { return esc(REASONS[x.reason] || x.reason) + (x.order_number ? ' <small>' + A.fa(x.order_number) + '</small>' : ''); } },
+        { label: 'توضیح', render: function (x) { return esc(x.note || '—'); } },
+        { label: 'انجام‌دهنده', render: function (x) { return esc(x.admin_name || (x.reason === 'order' ? 'سیستم (سفارش)' : 'سیستم')); } }]
+    });
+  });
+
+  /* ---------------- Bulk price change ---------------- */
+  page('#/pricing', 'pricing.bulk', function () {
+    var scopeF = [
+      { name: 'category_ids', label: 'دسته‌بندی‌ها (زیردسته‌ها هم شامل می‌شوند)', type: 'multi', endpoint: 'api/admin/r/categories', full: true },
+      { name: 'brand_ids', label: 'برندها', type: 'multi', endpoint: 'api/admin/r/brands', full: true },
+      { name: 'vehicle_model_ids', label: 'خودروها (محصولات سازگار با این مدل‌ها)', type: 'multi', endpoint: 'api/admin/r/vehicle-models', labelKey: 'brand_name+name', full: true },
+      { name: 'include_universal', label: 'محصولات «مناسب همه خودروها» هم شامل شوند', type: 'checkbox', full: true },
+      { name: 'status', label: 'محصولات', type: 'select', options: [['published', 'فقط منتشرشده'], ['all', 'منتشرشده و پیش‌نویس']] },
+      { name: 'confirm_all', label: 'اگر فیلتری انتخاب نشده، روی همه محصولات اعمال شود', type: 'checkbox' }
+    ];
+    var ruleF = [
+      { name: 'direction', label: 'نوع تغییر', type: 'select', options: [['increase', 'افزایش قیمت'], ['decrease', 'کاهش قیمت']] },
+      { name: 'type', label: 'روش', type: 'select', options: [['percent', 'درصدی'], ['fixed', 'مبلغ ثابت (تومان)']] },
+      { name: 'value', label: 'مقدار', type: 'number', required: true, placeholder: 'مثلاً ۱۰' },
+      { name: 'target', label: 'روی کدام قیمت', type: 'select', options: [['both', 'قیمت اصلی و قیمت تخفیف‌دار'], ['price', 'فقط قیمت اصلی'], ['sale', 'فقط قیمت تخفیف‌دار']] },
+      { name: 'rounding', label: 'گرد کردن قیمت جدید', type: 'select', options: [['1000', 'به نزدیک‌ترین ۱٬۰۰۰ تومان'], ['10000', 'به نزدیک‌ترین ۱۰٬۰۰۰ تومان'], ['100', 'به نزدیک‌ترین ۱۰۰ تومان'], ['0', 'بدون گرد کردن']] },
+      { name: 'variants', label: 'قیمت تنوع‌ها (مثلاً ۴ و ۵ لیتری) هم تغییر کند', type: 'checkbox', default: 1 }
+    ];
+    var html = '<form data-pricing novalidate>' +
+      '<section class="a-card"><h2 class="a-card__title">۱. کدام محصولات؟</h2><p class="a-hint" style="margin-top:-8px">شرط‌ها با هم ترکیب می‌شوند؛ مثلاً دسته «لنت ترمز» + برند «بوش» یعنی فقط لنت‌های بوش. داخل هر شرط، هر کدام از گزینه‌ها کافی است.</p><div class="a-grid">' + fields(scopeF, { status: 'published' }) + '</div></section>' +
+      '<section class="a-card"><h2 class="a-card__title">۲. چه تغییری؟</h2><div class="a-grid a-grid--3">' + fields(ruleF, { direction: 'increase', type: 'percent', target: 'both', rounding: '1000' }) + '</div>' +
+      '<div class="a-form-actions" style="margin-top:14px"><button type="submit" class="a-btn a-btn--primary">پیش‌نمایش تغییرات</button><span class="a-hint">تا روی «اعمال» نزنید هیچ قیمتی تغییر نمی‌کند.</span></div></section>' +
+      '<section class="a-card" data-preview hidden></section></form>' +
+      '<section class="a-card"><h2 class="a-card__title">تاریخچه تغییرات گروهی</h2><div data-history><div class="a-loading">در حال بارگذاری…</div></div></section>';
+    var v = A.view('تغییر گروهی قیمت', html);
+    var form = A.$('[data-pricing]', v);
+    var box = A.$('[data-preview]', v);
+    A.enhance(form);
+    var lastBody = null;
+    function body() { var d = A.read(form, scopeF.concat(ruleF)); d.value = Number(d.value); return d; }
+    // Any change after a preview invalidates it, so what is applied is always what was previewed.
+    form.addEventListener('input', function () { if (lastBody) { lastBody = null; box.hidden = true; } });
+    form.addEventListener('change', function () { if (lastBody) { lastBody = null; box.hidden = true; } });
+    form.addEventListener('click', function (e) { if (e.target.closest('[data-unpick], [data-pick-id]') && lastBody) { lastBody = null; box.hidden = true; } });
+
+    function money(n) { return n === null || n === undefined ? '<span class="a-muted">—</span>' : A.num(n); }
+    function pct(a, b) { if (!a || a === b) return ''; var p = (b - a) / a * 100; return ' <small class="a-ltr" style="color:' + (p < 0 ? 'var(--danger)' : 'var(--success)') + '">' + A.fa((p > 0 ? '+' : '') + p.toFixed(1)) + '٪</small>'; }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var b = body();
+      A.post('pricing/preview', b).then(function (d) {
+        lastBody = b;
+        box.hidden = false;
+        var rows = d.rows.length ? '<div class="a-table-wrap"><table class="a-table"><thead><tr><th>محصول</th><th>قیمت فعلی</th><th>قیمت جدید</th><th>تخفیف‌دار فعلی</th><th>تخفیف‌دار جدید</th><th>توضیح</th></tr></thead><tbody>' + d.rows.map(function (x) {
+          return '<tr' + (x.skip ? ' class="a-muted"' : '') + '><td>' + esc(x.name) + '</td><td>' + money(x.old_price) + '</td><td><strong>' + money(x.new_price) + '</strong>' + pct(x.old_price, x.new_price) + '</td>' +
+            '<td>' + money(x.old_sale_price) + '</td><td>' + money(x.new_sale_price) + pct(x.old_sale_price, x.new_sale_price) + '</td><td>' + (x.note ? '<small>' + esc(x.note) + '</small>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<div class="a-empty">با این شرایط قیمتی تغییر نمی‌کند.</div>';
+        box.innerHTML = '<h2 class="a-card__title">۳. پیش‌نمایش و اعمال</h2><p class="a-alert">' + esc(d.description) + '</p>' +
+          '<div class="a-stats">' + stat('محصولات مشمول', A.num(d.products)) + stat('قیمت‌هایی که تغییر می‌کنند', A.num(d.changes)) +
+          (d.sale_cleared ? stat('تخفیف‌های برداشته‌شده', A.num(d.sale_cleared), null, true) : '') + (d.skipped ? stat('ردشده (قیمت خیلی کم)', A.num(d.skipped), null, true) : '') + '</div>' +
+          rows + (d.truncated ? '<p class="a-hint">فقط ۳۰۰ ردیف اول نمایش داده شده است.</p>' : '') +
+          (d.changes ? '<div class="a-form-actions" style="margin-top:14px"><button type="button" class="a-btn a-btn--primary" data-apply>اعمال روی ' + A.num(d.changes) + ' قیمت</button><span class="a-hint">بعد از اعمال، از «تاریخچه» قابل بازگردانی است.</span></div>' : '');
+        box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var applyBtn = A.$('[data-apply]', box);
+        if (applyBtn) applyBtn.addEventListener('click', function () {
+          A.confirm(d.description + ' — قیمت ' + A.num(d.changes) + ' مورد تغییر کند؟', { yes: 'بله، اعمال شود' }).then(function (ok) {
+            if (!ok || !lastBody) return;
+            applyBtn.disabled = true;
+            A.post('pricing/apply', lastBody).then(function (res) {
+              A.toast('قیمت ' + A.num(res.products) + ' محصول تغییر کرد.');
+              lastBody = null; box.hidden = true;
+              loadHistory();
+            }).catch(function (err) { applyBtn.disabled = false; A.fail(err); });
+          });
+        });
+      }).catch(function (err) { A.showErrors(form, err); });
+    });
+
+    function loadHistory() {
+      var h = A.$('[data-history]', v);
+      A.get('pricing/batches', { per_page: 10 }).then(function (d) {
+        h.innerHTML = d.items.length ? '<div class="a-table-wrap"><table class="a-table"><thead><tr><th>تغییر</th><th>تعداد</th><th>توسط</th><th>زمان</th><th>وضعیت</th><th></th></tr></thead><tbody>' + d.items.map(function (b) {
+          return '<tr data-batch="' + b.id + '"><td>' + esc(b.description) + '</td><td>' + A.num(b.products_count) + ' محصول</td><td>' + esc(b.admin_name || '—') + '</td><td class="a-muted">' + esc(b.at) + '</td>' +
+            '<td>' + (b.reverted_at ? A.badge('بازگردانده شد', 'muted') + '<br><small>' + esc((b.reverted_by_name || '') + ' — ' + b.reverted_at_fa) + '</small>' : A.badge('اعمال‌شده', 'green')) + '</td>' +
+            '<td class="a-actions">' + btn('جزئیات', 'data-batch-view') + (b.reverted_at ? '' : btn('بازگردانی', 'data-batch-revert', 'a-btn--danger-ghost')) + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<div class="a-empty">هنوز تغییر گروهی ثبت نشده است.</div>';
+      }).catch(function (err) { h.innerHTML = '<p class="a-error">' + esc(err.message) + '</p>'; });
+    }
+    v.addEventListener('click', function (e) {
+      var tr = e.target.closest('[data-batch]');
+      if (!tr) return;
+      var id = tr.dataset.batch, desc = tr.cells[0].textContent;
+      if (e.target.closest('[data-batch-view]')) A.get('pricing/batches/' + id).then(function (items) {
+        A.modal({ title: desc, wide: true, body: '<div class="a-table-wrap"><table class="a-table"><thead><tr><th>محصول</th><th>قیمت قبل</th><th>قیمت بعد</th><th>تخفیف‌دار قبل</th><th>تخفیف‌دار بعد</th></tr></thead><tbody>' + items.map(function (x) {
+          return '<tr><td>' + esc(x.name) + (x.variant_name ? ' — ' + esc(x.variant_name) : '') + '</td><td>' + money(x.old_price) + '</td><td>' + money(x.new_price) + '</td><td>' + money(x.old_sale_price) + '</td><td>' + money(x.new_sale_price) + '</td></tr>';
+        }).join('') + '</tbody></table></div>' });
+      }).catch(A.fail);
+      if (e.target.closest('[data-batch-revert]')) A.confirm('قیمت‌های «' + desc + '» به مقدار قبل برگردد؟ قیمت محصولاتی که بعد از این تغییر دستی ویرایش شده‌اند دست نمی‌خورد.', { yes: 'بله، بازگردانی شود' }).then(function (ok) {
+        if (ok) A.post('pricing/batches/' + id + '/revert').then(function (res) {
+          A.toast('قیمت ' + A.num(res.restored) + ' مورد به قبل برگشت' + (res.kept ? '؛ ' + A.num(res.kept) + ' مورد دستی تغییر کرده بود و دست‌نخورده ماند.' : '.'));
+          loadHistory();
+        }).catch(A.fail);
+      });
+    });
+    loadHistory();
   });
 
   /* ---------------- Categories, brands, vehicles ---------------- */
@@ -684,7 +919,7 @@
     if (type === 'discounted' || type === 'tabbed_products') f.push({ name: 'limit', label: 'تعداد محصولات', type: 'number', step: 1 });
     if (type === 'blog_posts') f.push({ name: 'source', label: 'منبع مقالات', type: 'select', options: [['latest', 'جدیدترین'], ['category', 'از یک دسته']] }, { name: 'category', label: 'اسلاگ دسته وبلاگ', dir: 'ltr' }, { name: 'limit', label: 'تعداد', type: 'number', step: 1 });
     if (type === 'quick_categories' || type === 'visual_categories') f.push({ name: 'categories', label: 'دسته‌ها (به همین ترتیب)', type: 'multi', endpoint: 'api/admin/r/categories', full: true });
-    if (type === 'text') f.push({ name: 'body', label: 'محتوا', type: 'html', full: true });
+    if (type === 'text') f.push({ name: 'body', label: 'محتوا', type: 'html', folder: 'general', full: true });
     if (['vehicle_selector', 'testimonials', 'newsletter', 'benefits', 'text', 'tabbed_products', 'hero_slider', 'promo_banners', 'big_banner', 'two_banners'].indexOf(type) === -1) f.push({ name: 'link', label: 'لینک «مشاهده همه»', dir: 'ltr' });
     var data = Object.assign({}, s, {
       products: items.filter(function (i) { return i.item_type === 'product'; }).map(function (i) { return i.item_id; }),
@@ -871,7 +1106,7 @@
       rowActions: function (x) { return '<a class="a-btn a-btn--ghost a-btn--sm" href="' + esc(siteUrl('pages/' + x.slug)) + '" target="_blank" rel="noopener">نمایش</a>' + seoAction('page')(x); },
       fields: [{ name: 'title', label: 'عنوان', required: true }, { name: 'slug', label: 'اسلاگ', help: 'تغییر اسلاگ، ریدایرکت ۳۰۱ می‌سازد.' },
         { name: 'template', label: 'قالب', type: 'select', options: [['default', 'عادی'], ['contact', 'تماس با ما (با فرم)'], ['faq', 'سوالات متداول']] }, { name: 'status', label: 'وضعیت', type: 'select', options: [['draft', 'پیش‌نویس'], ['published', 'منتشرشده']] },
-        { name: 'excerpt', label: 'خلاصه', type: 'textarea', rows: 2, full: true }, { name: 'featured_image', label: 'تصویر', type: 'image', folder: 'pages', full: true }, { name: 'content', label: 'محتوا', type: 'html', full: true }],
+        { name: 'excerpt', label: 'خلاصه', type: 'textarea', rows: 2, full: true }, { name: 'featured_image', label: 'تصویر', type: 'image', folder: 'pages', full: true }, { name: 'content', label: 'محتوا', type: 'html', folder: 'pages', full: true }],
       defaults: { template: 'default', status: 'draft' }
     });
   });

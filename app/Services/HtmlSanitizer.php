@@ -27,7 +27,9 @@ final class HtmlSanitizer
     ];
     /** Tags whose whole subtree is dropped. */
     private const DROP = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'svg', 'math', 'template', 'noscript', 'link', 'meta', 'base', 'frame', 'frameset'];
-    private const CLASSES = ['note-box', 'warning-box', 'product-embed', 'cta-button', 'image-full', 'image-center'];
+    private const CLASSES = ['note-box', 'warning-box', 'product-embed', 'cta-button', 'image-full', 'image-center',
+        // inline image size and placement from the editor's image dialog
+        'img-full', 'img-medium', 'img-small', 'img-center', 'img-start', 'img-end'];
 
     public static function clean(?string $html): string
     {

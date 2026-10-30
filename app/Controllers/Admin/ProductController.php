@@ -111,7 +111,7 @@ final class ProductController extends AdminController
         $p['primary_category_id'] = (int) (Database::value('SELECT category_id FROM product_categories WHERE product_id = :id AND is_primary = 1', ['id' => $id]) ?? 0) ?: null;
         $p['images'] = Database::all('SELECT path, alt, is_primary FROM product_images WHERE product_id = :id ORDER BY is_primary DESC, sort_order, id', ['id' => $id]);
         $p['attributes'] = Database::all('SELECT a.name, v.value FROM product_attribute_values v JOIN product_attributes a ON a.id = v.attribute_id WHERE v.product_id = :id ORDER BY v.sort_order', ['id' => $id]);
-        $p['variants'] = Database::all('SELECT v.id, v.name, v.sku, v.price, v.is_active, COALESCE(i.quantity, 0) AS stock FROM product_variants v
+        $p['variants'] = Database::all('SELECT v.id, v.name, v.sku, v.price, v.color_hex, v.is_active, COALESCE(i.quantity, 0) AS stock FROM product_variants v
             LEFT JOIN inventory i ON i.product_id = v.product_id AND i.variant_id = v.id WHERE v.product_id = :id ORDER BY v.sort_order, v.id', ['id' => $id]);
         $p['vehicle_model_ids'] = array_map('intval', array_column(Database::all('SELECT vehicle_model_id FROM product_vehicle_compat WHERE product_id = :id', ['id' => $id]), 'vehicle_model_id'));
         $p['vehicles'] = Database::all('SELECT vehicle_model_id, year_from, year_to, note FROM product_vehicle_compat WHERE product_id = :id', ['id' => $id]);
@@ -254,6 +254,8 @@ final class ProductController extends AdminController
         foreach ((array) ($data['variants'] ?? []) as $i => $v) {
             if (!is_array($v) || trim((string) ($v['name'] ?? '')) === '' || (isset($v['price']) && $v['price'] !== '' && $v['price'] !== null && !is_numeric($v['price']))) {
                 $errors['variants'] = 'اطلاعات تنوع شماره ' . fa_digits($i + 1) . ' کامل نیست.';
+            } elseif (!empty($v['color_hex']) && !preg_match('/^#[0-9a-fA-F]{6}$/', (string) $v['color_hex'])) {
+                $errors['variants'] = 'رنگ تنوع شماره ' . fa_digits($i + 1) . ' معتبر نیست.';
             }
         }
         if ($errors) {
@@ -325,6 +327,7 @@ final class ProductController extends AdminController
         foreach (array_values((array) ($d['variants'] ?? [])) as $i => $v) {
             $row = ['name' => mb_substr(trim((string) $v['name']), 0, 120), 'sku' => trim((string) ($v['sku'] ?? '')) ?: null,
                 'price' => isset($v['price']) && $v['price'] !== '' && $v['price'] !== null ? (float) to_en_digits((string) $v['price']) : null,
+                'color_hex' => !empty($v['color_hex']) ? strtolower((string) $v['color_hex']) : null,
                 'is_active' => !empty($v['is_active']) || !isset($v['is_active']) ? 1 : 0, 'sort_order' => $i];
             $vid = isset($v['id']) && ctype_digit((string) $v['id']) && Database::value('SELECT 1 FROM product_variants WHERE id = :v AND product_id = :p', ['v' => (int) $v['id'], 'p' => $id]) ? (int) $v['id'] : 0;
             if ($vid) {

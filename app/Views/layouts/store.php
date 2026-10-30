@@ -8,7 +8,7 @@
  * @var array $boot   data passed to the JS (no secrets)
  */
 $settings = \App\Services\SettingsService::all(true);
-$v = '?v=6';
+$v = '?v=11';
 ?><!doctype html>
 <html lang="fa" dir="rtl">
 <head>

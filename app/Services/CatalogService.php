@@ -221,9 +221,9 @@ final class CatalogService
             return [
                 'id' => (int) $v['id'], 'name' => $v['name'], 'sku' => $v['sku'],
                 'price' => $v['price'] !== null ? (float) $v['price'] : $product['price'],
-                'stock' => (int) $v['stock'],
+                'stock' => (int) $v['stock'], 'color' => $v['color_hex'],
             ];
-        }, Database::all('SELECT v.id, v.name, v.sku, v.price, COALESCE(i.quantity, 0) AS stock FROM product_variants v
+        }, Database::all('SELECT v.id, v.name, v.sku, v.price, v.color_hex, COALESCE(i.quantity, 0) AS stock FROM product_variants v
             LEFT JOIN inventory i ON i.product_id = v.product_id AND i.variant_id = v.id
             WHERE v.product_id = :id AND v.is_active = 1 ORDER BY v.sort_order, v.id', ['id' => $id]));
         $product['vehicles'] = self::fitments($id);

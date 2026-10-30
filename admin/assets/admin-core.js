@@ -103,7 +103,8 @@
   /* ---------------- Layout & router ---------------- */
   A.MENU = [
     ['داشبورد', [['#/dashboard', 'grid', 'داشبورد', 'dashboard.view'], ['#/reports', 'sort', 'گزارش‌ها', 'reports.view'], ['#/notifications', 'alert', 'اعلان‌ها', 'notifications.view']]],
-    ['فروشگاه', [['#/products', 'package-track', 'محصولات', 'products.view|products.manage'], ['#/categories', 'grid', 'دسته‌بندی‌ها', 'categories.manage'], ['#/brands', 'award', 'برندها', 'brands.manage'],
+    ['فروشگاه', [['#/products', 'package-track', 'محصولات', 'products.view|products.manage'], ['#/inventory', 'grid', 'انبار و موجودی', 'inventory.manage|products.view'],
+      ['#/pricing', 'discount', 'تغییر گروهی قیمت', 'pricing.bulk'], ['#/categories', 'grid', 'دسته‌بندی‌ها', 'categories.manage'], ['#/brands', 'award', 'برندها', 'brands.manage'],
       ['#/vehicles', 'car', 'خودروها', 'vehicles.manage'], ['#/orders', 'truck', 'سفارش‌ها', 'orders.view'], ['#/customers', 'user', 'مشتریان', 'customers.view'], ['#/coupons', 'discount', 'کدهای تخفیف', 'coupons.manage']]],
     ['تعامل', [['#/reviews', 'star', 'مدیریت نظرات', 'reviews.view|reviews.manage'], ['#/questions', 'headset', 'پرسش‌های محصول', 'questions.manage'], ['#/messages', 'mail', 'پیام‌های تماس', 'messages.manage'], ['#/newsletter', 'mail', 'خبرنامه', 'newsletter.view']]],
     ['مدیریت محتوای سایت', [['#/homepage', 'home', 'صفحه اصلی', 'content.homepage'], ['#/banners', 'flash', 'بنرها', 'content.banners'], ['#/menus', 'menu', 'منوها', 'content.menus'],
@@ -226,7 +227,7 @@
       case 'keyvalue':
         input = '<div class="a-kv" data-kv="' + f.name + '">' + (v || []).map(kvRow).join('') + '</div><button type="button" class="a-btn a-btn--light a-btn--sm" data-kv-add="' + f.name + '">' + A.icon('plus', 'icon--sm') + 'افزودن ردیف</button>'; break;
       case 'html':
-        input = '<div class="a-editor-slot" data-editor="' + f.name + '"></div><textarea hidden name="' + f.name + '">' + A.esc(v) + '</textarea>'; break;
+        input = '<div class="a-editor-slot" data-editor="' + f.name + '" data-folder="' + (f.folder || 'blog') + '"></div><textarea hidden name="' + f.name + '">' + A.esc(v) + '</textarea>'; break;
       case 'readonly':
         input = '<div class="a-readonly">' + (f.html ? v : A.esc(v)) + '</div>'; break;
       default:
@@ -268,6 +269,9 @@
     });
   };
 
+  /** "brand_name+name" joins several fields into one label. */
+  function labelOf(it, key) { return key.split('+').map(function (k) { return it[k]; }).filter(Boolean).join(' ') || it.title || it.name; }
+
   /** Async multi-select backed by an admin list endpoint (?q=). Stores ids. */
   function initMulti(box) {
     var input = box.querySelector('input');
@@ -287,7 +291,7 @@
         var items = d.items || d;
         ids.forEach(function (id) {
           var it = items.filter(function (x) { return Number(x.id) === Number(id); })[0];
-          selected[id] = it ? (it[labelKey] || it.title || it.name) : '#' + id;
+          selected[id] = it ? labelOf(it, labelKey) : '#' + id;
         });
         draw();
       }).catch(function () { ids.forEach(function (id) { selected[id] = '#' + id; }); draw(); });
@@ -297,7 +301,7 @@
       A.request('GET', box.dataset.endpoint + A.qs({ q: input.value.trim(), per_page: 12 })).then(function (d) {
         var items = d.items || d;
         menu.innerHTML = items.length ? items.map(function (it) {
-          return '<button type="button" data-pick-id="' + it.id + '">' + A.esc(it[labelKey] || it.title || it.name) + '</button>';
+          return '<button type="button" data-pick-id="' + it.id + '">' + A.esc(labelOf(it, labelKey)) + '</button>';
         }).join('') : '<p class="a-hint">موردی پیدا نشد.</p>';
         menu.hidden = false;
       });

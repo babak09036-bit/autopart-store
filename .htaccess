@@ -7,7 +7,7 @@ AddDefaultCharset UTF-8
   RewriteEngine On
 
   # Never serve application code, configuration, data or tooling over HTTP.
-  RewriteRule ^(app|config|routes|storage|database|bin|tests|vendor)(/|$) - [F,L]
+  RewriteRule ^(app|config|routes|storage|database|bin|tests|vendor|deploy)(/|$) - [F,L]
   # Hidden files (.env, .git, .htaccess ...)
   RewriteRule (^|/)\.(?!well-known/) - [F,L]
 

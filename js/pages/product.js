@@ -79,6 +79,16 @@
       setQty(1);
     });
   }
+  // Colour swatches drive the (hidden) variant select, so price, stock and add-to-cart work the same way.
+  var swatches = document.getElementById('color-swatches');
+  if (swatches && variant) {
+    swatches.addEventListener('change', function (e) {
+      if (!e.target.matches('input[name="color"]')) return;
+      variant.value = e.target.value;
+      variant.dispatchEvent(new Event('change'));
+      swatches.querySelector('[data-color-name]').textContent = e.target.dataset.name;
+    });
+  }
   u.$$('[data-step]').forEach(function (b) {
     b.addEventListener('click', function () { setQty(Number(u.enDigits(qty.value)) + Number(b.dataset.step)); });
   });

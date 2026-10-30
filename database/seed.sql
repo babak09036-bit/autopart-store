@@ -40,7 +40,8 @@ INSERT INTO permissions (id, slug, name, group_name) VALUES
   (30, 'redirects.manage', 'مدیریت ریدایرکت‌ها', 'سئو'),
   (31, 'settings.manage', 'مدیریت تنظیمات فروشگاه', 'تنظیمات'),
   (32, 'admins.manage', 'مدیریت مدیران و نقش‌ها', 'تنظیمات'),
-  (33, 'logs.view', 'مشاهده گزارش فعالیت‌ها', 'تنظیمات');
+  (33, 'logs.view', 'مشاهده گزارش فعالیت‌ها', 'تنظیمات'),
+  (34, 'pricing.bulk', 'تغییر گروهی قیمت', 'محصولات');
 
 INSERT INTO roles (id, slug, name, description, is_system) VALUES
   (1, 'super_admin', 'مدیر کل', 'دسترسی کامل به همه بخش‌ها', 1),
@@ -85,6 +86,8 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
   (1, 31),
   (1, 32),
   (1, 33),
+  (1, 34),
+  (4, 34),
   (2, 1),
   (2, 3),
   (2, 21),

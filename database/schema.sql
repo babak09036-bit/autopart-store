@@ -295,6 +295,7 @@ CREATE TABLE product_variants (
   name VARCHAR(120) NOT NULL COMMENT 'e.g. «۴ لیتری» or «مشکی»',
   sku VARCHAR(64) NULL,
   price DECIMAL(14,2) NULL COMMENT 'Overrides the product price when set',
+  color_hex CHAR(7) NULL COMMENT 'swatch colour, e.g. #1a1a1a; NULL = not a colour option',
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -318,6 +319,38 @@ CREATE TABLE inventory (
   KEY idx_inventory_low (quantity),
   CONSTRAINT fk_inventory_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
   CONSTRAINT chk_inventory_qty CHECK (quantity >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE price_change_batches (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  admin_user_id BIGINT UNSIGNED NULL,
+  description VARCHAR(255) NOT NULL,
+  rule_json TEXT NOT NULL COMMENT 'scope and rule as submitted (for the history view)',
+  products_count INT NOT NULL DEFAULT 0,
+  items_count INT NOT NULL DEFAULT 0,
+  reverted_at DATETIME NULL,
+  reverted_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_pcb_created (created_at),
+  CONSTRAINT fk_pcb_admin FOREIGN KEY (admin_user_id) REFERENCES admin_users (id) ON DELETE SET NULL,
+  CONSTRAINT fk_pcb_reverter FOREIGN KEY (reverted_by) REFERENCES admin_users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE price_change_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  batch_id BIGINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  variant_id BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0 = the product row itself',
+  old_price DECIMAL(14,2) NULL,
+  new_price DECIMAL(14,2) NULL,
+  old_sale_price DECIMAL(14,2) NULL,
+  new_sale_price DECIMAL(14,2) NULL,
+  PRIMARY KEY (id),
+  KEY idx_pci_batch (batch_id),
+  KEY idx_pci_product (product_id),
+  CONSTRAINT fk_pci_batch FOREIGN KEY (batch_id) REFERENCES price_change_batches (id) ON DELETE CASCADE,
+  CONSTRAINT fk_pci_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE inventory_movements (

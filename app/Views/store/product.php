@@ -67,12 +67,25 @@ $images = $p['images'] ?: [['path' => $p['image'], 'alt' => $p['title']]];
       <?php elseif ($p['stock'] <= 10): ?><span class="stock stock--low">تنها <?= e(fa_number($p['stock'])) ?> عدد در انبار باقی مانده</span>
       <?php else: ?><span class="stock stock--in"><?= icon('check', 'icon--sm') ?>موجود در انبار</span><?php endif; ?>
 
-      <?php if ($p['variants']): ?>
-      <div class="field">
+      <?php if ($p['variants']):
+        $isColor = !in_array(null, array_column($p['variants'], 'color'), true);
+        $firstInStock = array_values(array_filter($p['variants'], static fn ($v) => $v['stock'] > 0))[0]['id'] ?? null; ?>
+      <?php if ($isColor): ?>
+      <fieldset class="swatches" id="color-swatches">
+        <legend>رنگ: <strong data-color-name><?= e(($firstInStock ? array_values(array_filter($p['variants'], static fn ($v) => $v['id'] === $firstInStock))[0]['name'] : $p['variants'][0]['name'])) ?></strong></legend>
+        <?php foreach ($p['variants'] as $v): ?>
+        <label class="swatch<?= $v['stock'] < 1 ? ' is-out' : '' ?>" title="<?= e($v['name'] . ($v['stock'] < 1 ? ' (ناموجود)' : '')) ?>">
+          <input type="radio" name="color" value="<?= (int) $v['id'] ?>" data-name="<?= e($v['name']) ?>"<?= $v['id'] === $firstInStock ? ' checked' : '' ?><?= $v['stock'] < 1 ? ' disabled' : '' ?>>
+          <span class="swatch__dot" style="--swatch: <?= e($v['color']) ?>"></span><span class="visually-hidden"><?= e($v['name'] . ($v['stock'] < 1 ? ' (ناموجود)' : '')) ?></span>
+        </label>
+        <?php endforeach; ?>
+      </fieldset>
+      <?php endif; ?>
+      <div class="field"<?= $isColor ? ' hidden' : '' ?>>
         <label for="variant">نوع محصول</label>
-        <select class="select" id="variant">
+        <select class="select" id="variant"<?= $isColor ? ' tabindex="-1" aria-hidden="true"' : '' ?>>
           <?php foreach ($p['variants'] as $v): ?>
-          <option value="<?= (int) $v['id'] ?>" data-price="<?= e((string) $v['price']) ?>" data-stock="<?= (int) $v['stock'] ?>"<?= $v['stock'] < 1 ? ' disabled' : '' ?>><?= e($v['name']) ?><?= $v['stock'] < 1 ? ' (ناموجود)' : '' ?></option>
+          <option value="<?= (int) $v['id'] ?>" data-price="<?= e((string) $v['price']) ?>" data-stock="<?= (int) $v['stock'] ?>"<?= $v['stock'] < 1 ? ' disabled' : '' ?><?= $v['id'] === $firstInStock ? ' selected' : '' ?>><?= e($v['name']) ?><?= $v['stock'] < 1 ? ' (ناموجود)' : '' ?></option>
           <?php endforeach; ?>
         </select>
       </div>
@@ -80,7 +93,8 @@ $images = $p['images'] ?: [['path' => $p['image'], 'alt' => $p['title']]];
 
       <div class="price" id="buy-price">
         <?php if ($p['oldPrice']): ?><div class="price__old"><span class="visually-hidden">قیمت قبلی:</span><del><?= e(fa_number($p['oldPrice'])) ?></del><span class="badge badge--red"><?= e(fa_number($p['discountPercent'])) ?>٪ تخفیف</span></div><?php endif; ?>
-        <div class="price__now"><strong id="buy-price-now"><?= e(fa_number($p['variants'] ? $p['variants'][0]['price'] : $p['price'])) ?></strong><span>تومان</span></div>
+        <?php $shown = $p['variants'] ? (array_values(array_filter($p['variants'], static fn ($v) => $v['id'] === $firstInStock))[0] ?? $p['variants'][0]) : null; ?>
+        <div class="price__now"><strong id="buy-price-now"><?= e(fa_number($shown ? $shown['price'] : $p['price'])) ?></strong><span>تومان</span></div>
       </div>
       <?php if ($p['inStock']): ?>
       <div class="buybox__qty"><span>تعداد:</span>

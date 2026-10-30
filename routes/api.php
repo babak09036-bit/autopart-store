@@ -106,6 +106,17 @@ return static function (Router $r): void {
             $r->post('/products/{id:\d+}/stock', [Admin\ProductController::class, 'adjustStock'], ['perm:inventory.manage']);
             $r->patch('/products/{id:\d+}/flags', [Admin\ProductController::class, 'flags'], ['perm:products.manage']);
 
+            $r->get('/inventory', [Admin\InventoryController::class, 'index'], ['perm:inventory.manage|products.view']);
+            $r->get('/inventory/movements', [Admin\InventoryController::class, 'movements'], ['perm:inventory.manage|products.view']);
+            $r->put('/inventory/{id:\d+}', [Admin\InventoryController::class, 'update'], ['perm:inventory.manage']);
+            $r->post('/inventory/bulk', [Admin\InventoryController::class, 'bulk'], ['perm:inventory.manage']);
+
+            $r->post('/pricing/preview', [Admin\PricingController::class, 'preview'], ['perm:pricing.bulk']);
+            $r->post('/pricing/apply', [Admin\PricingController::class, 'apply'], ['perm:pricing.bulk', 'throttle:pricing,20,600']);
+            $r->get('/pricing/batches', [Admin\PricingController::class, 'batches'], ['perm:pricing.bulk']);
+            $r->get('/pricing/batches/{id:\d+}', [Admin\PricingController::class, 'batch'], ['perm:pricing.bulk']);
+            $r->post('/pricing/batches/{id:\d+}/revert', [Admin\PricingController::class, 'revert'], ['perm:pricing.bulk']);
+
             $r->get('/orders', [Admin\OrderController::class, 'index'], ['perm:orders.view']);
             $r->get('/orders/{id:\d+}', [Admin\OrderController::class, 'show'], ['perm:orders.view']);
             $r->put('/orders/{id:\d+}/status', [Admin\OrderController::class, 'updateStatus'], ['perm:orders.manage']);
