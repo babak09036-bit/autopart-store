@@ -24,13 +24,29 @@ header('Referrer-Policy: same-origin');
 header('Cache-Control: no-store');
 header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'; base-uri 'self'");
 
-$token = (string) Env::get('SETUP_TOKEN', '');
-$hasAdmin = (int) Database::value('SELECT COUNT(*) FROM admin_users') > 0;
-if (strlen($token) < 32 || $hasAdmin) {
-    http_response_code(404);
+/** Short plain-text answer for the cases where the setup form must not be shown. */
+function setup_stop(int $status, string $message): never
+{
+    http_response_code($status);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Not found';
+    echo $message;
     exit;
+}
+
+$token = (string) Env::get('SETUP_TOKEN', '');
+if ($token === '') {
+    setup_stop(404, 'Not found');
+}
+try {
+    $hasAdmin = (int) Database::value('SELECT COUNT(*) FROM admin_users') > 0;
+} catch (\Throwable $e) {
+    setup_stop(503, 'دیتابیس هنوز آماده نیست: جدول‌ها وارد نشده‌اند یا اطلاعات اتصال در .env درست نیست.');
+}
+if ($hasAdmin) {
+    setup_stop(404, 'Not found');
+}
+if (strlen($token) < 32) {
+    setup_stop(503, 'مقدار SETUP_TOKEN در فایل .env کوتاه است؛ یک متن تصادفی حداقل ۳۲ کاراکتری بگذارید و صفحه را دوباره باز کنید.');
 }
 
 Session::start();
